@@ -1,0 +1,104 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="content-area">
+    <div class="page-header">
+        <h2 class="page-title">Dashboard</h2>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Ventas del día</div>
+            <div class="stat-value">$4,280.0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Pedidos Pendientes</div>
+            <div class="stat-value">18</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Stock Crítico</div>
+            <div class="stat-value danger">12</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Ingresos Semanales</div>
+            <div class="stat-value">$24,912</div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent-border);">
+            <h3 style="font-family: var(--font-serif); font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span class="icon-warning" style="color: var(--danger); font-size: 1.2rem;">&#9888;</span> Alertas de Inventario
+            </h3>
+            <a href="/inventario" style="color: var(--text-dark); text-decoration: none; font-size: 0.85rem; font-weight: 600;">Ver todo el inventario</a>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th>Categoría</th>
+                        <th>Stock Actual</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Pan Blanco Hamburguesa</td>
+                        <td style="color: var(--text-muted);">Pan</td>
+                        <td>
+                            <div class="stock-indicator-container">
+                                <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
+                                <span class="stock-text critical">1 Paquete</span>
+                            </div>
+                        </td>
+                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Café de Grano Libanés</td>
+                        <td style="color: var(--text-muted);">Café</td>
+                        <td>
+                            <div class="stock-indicator-container">
+                                <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
+                                <span class="stock-text critical">1 Kg</span>
+                            </div>
+                        </td>
+                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Leche Entera</td>
+                        <td style="color: var(--text-muted);">Lácteos</td>
+                        <td>
+                            <div class="stock-indicator-container">
+                                <div class="stock-bar-bg"><div class="stock-bar-fill warning"></div></div>
+                                <span class="stock-text warning">2 Litros</span>
+                            </div>
+                        </td>
+                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Cerezas en Almíbar</td>
+                        <td style="color: var(--text-muted);">Fruta</td>
+                        <td>
+                            <div class="stock-indicator-container">
+                                <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
+                                <span class="stock-text critical">0.1 Kg</span>
+                            </div>
+                        </td>
+                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="padding: 1.5rem; background-color: var(--accent-bg); border-top: 1px solid var(--accent-border);">
+            <div class="pagination" style="padding: 0; justify-content: flex-end;">
+                <div class="page-controls">
+                    <button class="page-btn">&lsaquo;</button>
+                    <span style="font-weight: 600; color: var(--text-dark);">Página 1 de 4</span>
+                    <button class="page-btn">&rsaquo;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

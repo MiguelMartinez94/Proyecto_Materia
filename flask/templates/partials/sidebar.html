@@ -1,0 +1,47 @@
+<aside class="sidebar">
+    <div class="brand">
+        <h1 class="brand-logo">Coffee<br>Code</h1>
+        {% if active_page == 'reportes' %}
+        <div class="brand-subtitle">Administrative Module</div>
+        {% endif %}
+    </div>
+    
+    <ul class="nav-menu">
+        <li class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+            <a href="/" class="nav-link">
+                <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Dashboard
+            </a>
+        </li>
+        <li class="nav-item {% if active_page == 'usuarios' %}active{% endif %}">
+            <a href="/usuarios" class="nav-link">
+                <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Usuarios
+            </a>
+        </li>
+        <li class="nav-item {% if active_page == 'menu' %}active{% endif %}">
+            <a href="/menu" class="nav-link">
+                <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Menú
+            </a>
+        </li>
+        <li class="nav-item {% if active_page == 'inventario' %}active{% endif %}">
+            <a href="/inventario" class="nav-link">
+                <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Inventario
+            </a>
+        </li>
+        <li class="nav-item {% if active_page == 'reportes' %}active{% endif %}">
+            <a href="/reportes" class="nav-link">
+                <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Reportes
+            </a>
+        </li>
+        <li class="nav-item {% if active_page == 'configuracion' %}active{% endif %}">
+            <a href="/configuracion" class="nav-link">
+                <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Configuración
+            </a>
+        </li>
+    </ul>
+
+    <div class="logout-container">
+        <a href="#" class="nav-link">
+            <span class="nav-icon" style="background-color: currentColor; mask-image: none;"></span> Cerrar Sesión
+        </a>
+    </div>
+</aside>
