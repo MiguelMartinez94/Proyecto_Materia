@@ -61,7 +61,7 @@ def procesar_pago(db: Session, orden_id: int, metodo_pago: str, monto_recibido: 
     
     mesa = db.query(Mesa).filter(Mesa.id == orden.mesa_id).first()
     if mesa:
-        mesa.estado = "LIBRE"
+        mesa.estado = "OCUPADA"
         
     db.add(nueva_venta)
     db.commit()

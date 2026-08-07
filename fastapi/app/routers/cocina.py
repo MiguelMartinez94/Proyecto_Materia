@@ -9,8 +9,7 @@ from .auth import require_roles
 
 router = APIRouter(
     prefix="/cocina", 
-    tags=["Cocina"],
-    dependencies=[Depends(require_roles(["COCINERO", "ADMINISTRADOR"]))]
+    tags=["Cocina"]
 )
 
 @router.get("/comandas", response_model=List[OrdenOut])

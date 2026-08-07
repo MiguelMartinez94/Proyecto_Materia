@@ -2,99 +2,229 @@
 
 {% block content %}
 <div class="content-area">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
         <div style="background-color: var(--accent-bg); padding: 0.25rem; border-radius: 4px; display: inline-flex;">
-            <button class="btn" style="background: transparent; color: var(--text-muted); box-shadow: none;">Hoy</button>
-            <button class="btn" style="background: var(--white); color: var(--text-dark); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">Esta Semana</button>
-            <button class="btn" style="background: transparent; color: var(--text-muted); box-shadow: none;">Este Mes</button>
+            <a href="{{ url_for('reportes', periodo='hoy') }}" class="btn" style="background: {{ 'var(--white)' if periodo_actual == 'hoy' else 'transparent' }}; color: {{ 'var(--text-dark)' if periodo_actual == 'hoy' else 'var(--text-muted)' }}; box-shadow: {{ '0 1px 3px rgba(0,0,0,0.1)' if periodo_actual == 'hoy' else 'none' }}; text-decoration: none;">Hoy</a>
+            <a href="{{ url_for('reportes', periodo='semana') }}" class="btn" style="background: {{ 'var(--white)' if periodo_actual == 'semana' else 'transparent' }}; color: {{ 'var(--text-dark)' if periodo_actual == 'semana' else 'var(--text-muted)' }}; box-shadow: {{ '0 1px 3px rgba(0,0,0,0.1)' if periodo_actual == 'semana' else 'none' }}; text-decoration: none;">Esta Semana</a>
+            <a href="{{ url_for('reportes', periodo='mes') }}" class="btn" style="background: {{ 'var(--white)' if periodo_actual == 'mes' else 'transparent' }}; color: {{ 'var(--text-dark)' if periodo_actual == 'mes' else 'var(--text-muted)' }}; box-shadow: {{ '0 1px 3px rgba(0,0,0,0.1)' if periodo_actual == 'mes' else 'none' }}; text-decoration: none;">Este Mes</a>
         </div>
         
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <span style="font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; color: var(--text-muted);">RANGO DE FECHAS:</span>
-            <select class="form-control" style="width: auto; background-color: var(--white);">
-                <option>May 20, 2026 &ndash; May 27, 2026</option>
-            </select>
+        <form method="GET" action="{{ url_for('reportes') }}" style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; color: var(--text-muted);">RANGO:</span>
+            <input type="date" name="fecha_inicio" class="form-control" style="width: auto;" value="{{ fecha_inicio }}">
+            <span style="color: var(--text-muted);">—</span>
+            <input type="date" name="fecha_fin" class="form-control" style="width: auto;" value="{{ fecha_fin }}">
+            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Filtrar</button>
+        </form>
+    </div>
+
+    <div class="stats-grid" style="margin-bottom: 2rem;">
+        <div class="stat-card">
+            <div class="stat-title">Total Ventas</div>
+            <div class="stat-value">${{ "%.2f"|format(estadisticas.resumen.total_ventas) }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Órdenes Cobradas</div>
+            <div class="stat-value">{{ estadisticas.resumen.num_ventas }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Ticket Promedio</div>
+            <div class="stat-value">${{ "%.2f"|format(estadisticas.resumen.ticket_promedio) }}</div>
         </div>
     </div>
 
     <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
-        
-        
         <div class="card" style="display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                 <div>
-                    <h3 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.25rem;">Gastos vs Ganancias</h3>
-                    <div style="font-size: 0.85rem; color: var(--text-muted);">Rendimiento financiero semanal</div>
-                </div>
-                <div style="display: flex; gap: 1rem; font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">
-                    <div style="display: flex; align-items: center; gap: 0.35rem;">
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background-color: var(--text-dark);"></span> GASTOS
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 0.35rem;">
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background-color: var(--success);"></span> GANANCIAS
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        {{ estadisticas.periodo.inicio }} — {{ estadisticas.periodo.fin }}
                     </div>
                 </div>
             </div>
-            
-            <div class="chart-placeholder" style="flex-grow: 1; align-items: flex-end; padding-bottom: 1rem;">
-                
-                <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; border-top: 1px dashed var(--accent-border); padding-top: 0.5rem; margin-top: auto;">
-                    <span>LUN</span><span>MAR</span><span>MIE</span><span>JUE</span><span>VIE</span><span>SAB</span><span>DOM</span>
-                </div>
+            <div style="flex-grow: 1; min-height: 280px;">
+                <canvas id="salesChart"></canvas>
             </div>
         </div>
 
-        
         <div class="card">
-            <div style="margin-bottom: 2rem;">
+            <div style="margin-bottom: 1.5rem;">
                 <h3 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.25rem;">Productos más vendidos</h3>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Distribución por categoría</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Top 5 del periodo</div>
             </div>
             
             <div style="display: flex; align-items: center; gap: 2rem;">
-                <div class="donut-chart-placeholder">
-                    <div class="donut-chart-value">85%</div>
-                    <div class="donut-chart-label">TOTAL VENTA</div>
+                <div style="width: 180px; height: 180px; flex-shrink: 0;">
+                    <canvas id="productsChart"></canvas>
                 </div>
                 
-                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1rem;">
+                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.75rem;">
+                    {% set chart_colors = ['#4a3b2c', '#6e5c4f', '#a08a7a', '#e3d3c4', '#f5ece4'] %}
+                    {% for p in estadisticas.productos_top %}
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-dark);"></span> Textiles Premium
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: {{ chart_colors[loop.index0 % 5] }};"></span>
+                            {{ p.nombre }}
                         </div>
-                        <span style="font-weight: 600; font-size: 0.85rem;">45%</span>
+                        <span style="font-weight: 600; font-size: 0.85rem;">{{ p.porcentaje }}%</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-muted);"></span> Accesorios Cuero
-                        </div>
-                        <span style="font-weight: 600; font-size: 0.85rem;">25%</span>
+                    {% endfor %}
+                    {% if not estadisticas.productos_top %}
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">
+                        Sin datos en este periodo
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-border);"></span> Calzado Artesanal
-                        </div>
-                        <span style="font-weight: 600; font-size: 0.85rem;">20%</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #f5ece4;"></span> Otros
-                        </div>
-                        <span style="font-weight: 600; font-size: 0.85rem;">10%</span>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-
     </div>
 
-    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-        <button class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="action-icon" style="background-color: currentColor; mask-image: url('data:image/svg+xml;utf8,<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z\"/></svg>');"></span> Descargar PDF
-        </button>
-        <button class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="action-icon" style="background-color: currentColor; mask-image: url('data:image/svg+xml;utf8,<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z\"/></svg>');"></span> Descargar XLSX
-        </button>
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent-border);">
+            <h3 style="font-family: var(--font-serif); font-size: 1.25rem;">Detalle de Pedidos</h3>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">{{ estadisticas.pedidos | length }} pedidos encontrados</span>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th># Orden</th>
+                        <th>Fecha</th>
+                        <th>Mesa</th>
+                        <th>Mesero</th>
+                        <th>Estado</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in estadisticas.pedidos %}
+                    <tr>
+                        <td style="font-weight: 600;">#{{ p.id }}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ p.created_at[:16].replace('T', ' ') }}</td>
+                        <td>Mesa {{ p.mesa_numero or 'N/A' }}</td>
+                        <td>{{ p.mesero }}</td>
+                        <td>
+                            {% if p.estado == 'PAGADA' %}
+                            <span class="badge active"><span class="badge-status"></span> Pagada</span>
+                            {% elif p.estado == 'EN_ESPERA' %}
+                            <span class="badge" style="background-color: #fff3e0; color: #f57c00;"><span class="badge-status" style="background-color: #f57c00;"></span> En Espera</span>
+                            {% elif p.estado == 'EN_PREPARACION' %}
+                            <span class="badge" style="background-color: #e3f2fd; color: #1976d2;"><span class="badge-status" style="background-color: #1976d2;"></span> En Preparación</span>
+                            {% elif p.estado == 'LISTA' %}
+                            <span class="badge" style="background-color: #e8f5e9; color: #388e3c;"><span class="badge-status" style="background-color: #388e3c;"></span> Lista</span>
+                            {% else %}
+                            <span class="badge badge-role">{{ p.estado }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">{{ p.num_items }}</td>
+                        <td style="font-weight: 600;">${{ "%.2f"|format(p.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not estadisticas.pedidos %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay pedidos en este periodo</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        <a href="{{ url_for('descargar_reporte', formato='pdf', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='ventas') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Ventas PDF
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='xlsx', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='ventas') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Ventas XLSX
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='pdf', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='pedidos') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Pedidos PDF
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='xlsx', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='pedidos') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Pedidos XLSX
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='pdf', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='inventario') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Inventario PDF
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='xlsx', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='inventario') }}" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Inventario XLSX
+        </a>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const salesLabels = {{ estadisticas.grafica_ventas.labels | tojson }};
+    const salesData = {{ estadisticas.grafica_ventas.data | tojson }};
+
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'bar',
+        data: {
+            labels: salesLabels,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: salesData,
+                backgroundColor: '#4a3b2c',
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f5ece4' },
+                    ticks: {
+                        callback: function(value) { return '$' + value.toLocaleString(); },
+                        font: { family: 'Inter', size: 11 },
+                        color: '#6e5c4f'
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { family: 'Inter', size: 11, weight: 600 },
+                        color: '#6e5c4f'
+                    }
+                }
+            }
+        }
+    });
+
+    const productosTop = {{ estadisticas.productos_top | tojson }};
+    const chartColors = ['#4a3b2c', '#6e5c4f', '#a08a7a', '#e3d3c4', '#f5ece4'];
+
+    if (productosTop.length > 0) {
+        const donutCtx = document.getElementById('productsChart').getContext('2d');
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: productosTop.map(p => p.nombre),
+                datasets: [{
+                    data: productosTop.map(p => p.porcentaje),
+                    backgroundColor: chartColors.slice(0, productosTop.length),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

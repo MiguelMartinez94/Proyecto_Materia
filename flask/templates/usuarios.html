@@ -7,32 +7,33 @@
             <h2 class="page-title">Gestión de Personal</h2>
         </div>
 
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div style="background-color: #e8f5e9; color: #2e7d32; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-title">Total Usuarios</div>
-                <div class="stat-value">{{ usuarios | length }}</div>
+                <div class="stat-value">{{ stats.total }}</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">Activos Hoy</div>
-                <div class="stat-value">18</div>
+                <div class="stat-title">Activos</div>
+                <div class="stat-value" style="color: var(--success);">{{ stats.activos }}</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">Roles Definidos</div>
-                <div class="stat-value">06</div>
-            </div>
+
             <div class="stat-card">
                 <div class="stat-title">Inactivos</div>
-                <div class="stat-value">02</div>
+                <div class="stat-value danger">{{ stats.inactivos }}</div>
             </div>
         </div>
 
         <div class="card" style="padding: 0;">
             <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent-border);">
                 <h3 style="font-family: var(--font-serif); font-size: 1.25rem;">Lista de Personal</h3>
-                <div style="display: flex; gap: 1rem;">
-                    <span class="icon-filter" style="cursor: pointer; color: var(--text-muted);">&#9776;</span>
-                    <span class="icon-download" style="cursor: pointer; color: var(--text-muted);">&#8681;</span>
-                </div>
             </div>
             <div class="table-container">
                 <table class="table">
@@ -41,7 +42,7 @@
                             <th>Nombre</th>
                             <th>Rol</th>
                             <th>Estado</th>
-                            <th>Último Acceso</th>
+                            <th>Fecha Creación</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -49,7 +50,7 @@
                         {% for u in usuarios %}
                         <tr>
                             <td style="display: flex; align-items: center; gap: 1rem;">
-                                <div class="user-avatar" style="background-color: #e3d3c4;">{{ u.nombre[:2].upper() }}</div>
+                                
                                 <div>
                                     <div style="font-weight: 600;">{{ u.nombre }}</div>
                                     <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.username }}</div>
@@ -65,12 +66,16 @@
                             </td>
                             <td style="color: var(--text-muted); font-size: 0.85rem;">{{ u.created_at[:10] }}</td>
                             <td>
-                                <div class="action-icons">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button type="button" onclick="editUser({{ u.id }}, '{{ u.nombre }}', '{{ u.username }}', {{ u.rol.id }}, {{ 'true' if u.activo else 'false' }})" style="background: none; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.75rem; color: var(--text-dark);" title="Editar">
+                                        Editar
+                                    </button>
                                     <form method="POST" action="{{ url_for('usuarios') }}" style="display:inline;">
-                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="action" value="toggle_status">
                                         <input type="hidden" name="id" value="{{ u.id }}">
-                                        <button type="submit" style="background:none; border:none; cursor:pointer;" onclick="return confirm('¿Eliminar usuario?');">
-                                            <span class="action-icon" style="mask-image: url('data:image/svg+xml;utf8,<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z\"/></svg>');"></span>
+                                        <input type="hidden" name="new_status" value="{{ 'false' if u.activo else 'true' }}">
+                                        <button type="submit" style="background: none; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.75rem; color: {{ 'var(--danger)' if u.activo else 'var(--success)' }};">
+                                            {{ 'Desactivar' if u.activo else 'Activar' }}
                                         </button>
                                     </form>
                                 </div>
@@ -83,62 +88,89 @@
             <div style="padding: 1.5rem; border-top: 1px solid var(--accent-border);">
                 <div class="pagination">
                     <span>Mostrando {{ usuarios | length }} usuarios</span>
-                    <div class="page-controls">
-                        <button class="page-btn">&lsaquo;</button>
-                        <span style="font-weight: 600; color: var(--text-dark);">Página 1 de 5</span>
-                        <button class="page-btn">&rsaquo;</button>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="right-panel open">
-        <form method="POST" action="{{ url_for('usuarios') }}">
-            <input type="hidden" name="action" value="create">
+    <div class="right-panel open" id="userPanel">
+        <form method="POST" action="{{ url_for('usuarios') }}" id="userForm">
+            <input type="hidden" name="action" value="create" id="formAction">
+            <input type="hidden" name="id" value="" id="formUserId">
             <div class="panel-header">
                 <div>
-                    <h3 class="panel-title">Nuevo Usuario</h3>
-                    <div class="panel-subtitle">Personal de Stitch</div>
+                    <h3 class="panel-title" id="panelTitle">Nuevo Usuario</h3>
+                    <div class="panel-subtitle">Personal de Coffee Code</div>
                 </div>
-                <button type="button" class="panel-close">&times;</button>
+                <button type="button" class="panel-close" onclick="resetForm()">×</button>
             </div>
             <div class="panel-body">
-                <div class="image-upload-placeholder image-upload-small" style="background-color: #eeddce; border-color: var(--text-muted);">
-                    <span class="icon-upload" style="width: 24px; height: 24px; margin-bottom: 5px;"></span>
-                    <span style="font-size: 0.7rem; color: var(--text-dark);">SUBIR</span>
-                </div>
-                <div style="text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2rem;">Subir Foto</div>
-                
                 <div class="form-group">
                     <label class="form-label">Nombre Completo</label>
-                    <input type="text" name="nombre" class="form-control" placeholder="Ej. Ana Victoria Silva" required>
+                    <input type="text" name="nombre" id="inputNombre" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Usuario</label>
-                    <input type="text" name="username" class="form-control" placeholder="ana.v" required>
+                    <label class="form-label">Usuario / Email</label>
+                    <input type="text" name="username" id="inputUsername" class="form-control" required>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">PIN de Acceso</label>
-                        <input type="password" name="password" class="form-control" required style="letter-spacing: 4px; font-size: 1.2rem; text-align: center;">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" name="password" id="inputPassword" class="form-control" style="letter-spacing: 4px; font-size: 1.2rem; text-align: center;">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Rol en Sistema</label>
-                        <select name="rol_id" class="form-control" style="background-color: var(--white);" required>
+                        <select name="rol_id" id="inputRol" class="form-control" style="background-color: var(--white);" required>
                             {% for r in roles %}
                             <option value="{{ r.id }}">{{ r.nombre }}</option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
+
+                <div class="form-group" id="statusGroup" style="display: none;">
+                    <label class="form-label">Estado</label>
+                    <select name="activo" id="inputActivo" class="form-control">
+                        <option value="true">Activo</option>
+                        <option value="false">Inactivo</option>
+                    </select>
+                </div>
             </div>
             <div class="panel-footer">
-                <button type="button" class="btn btn-outline panel-close" style="width: 48%;">Cancelar</button>
-                <button type="submit" class="btn btn-primary" style="width: 48%;">Guardar Usuario</button>
+                <button type="button" class="btn btn-outline" style="width: 48%;" onclick="resetForm()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="width: 48%;" id="submitBtn">Guardar Usuario</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function editUser(id, nombre, username, rolId, activo) {
+    document.getElementById('formAction').value = 'update';
+    document.getElementById('formUserId').value = id;
+    document.getElementById('inputNombre').value = nombre;
+    document.getElementById('inputUsername').value = username;
+    document.getElementById('inputPassword').value = '';
+    document.getElementById('inputPassword').removeAttribute('required');
+    document.getElementById('inputRol').value = rolId;
+    document.getElementById('inputActivo').value = activo ? 'true' : 'false';
+    document.getElementById('panelTitle').textContent = 'Editar Usuario';
+    document.getElementById('submitBtn').textContent = 'Actualizar Usuario';
+    document.getElementById('statusGroup').style.display = 'block';
+}
+
+function resetForm() {
+    document.getElementById('formAction').value = 'create';
+    document.getElementById('formUserId').value = '';
+    document.getElementById('inputNombre').value = '';
+    document.getElementById('inputUsername').value = '';
+    document.getElementById('inputPassword').value = '';
+    document.getElementById('inputPassword').setAttribute('required', 'required');
+    document.getElementById('inputRol').selectedIndex = 0;
+    document.getElementById('panelTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('submitBtn').textContent = 'Guardar Usuario';
+    document.getElementById('statusGroup').style.display = 'none';
+}
+</script>
 {% endblock %}

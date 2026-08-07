@@ -7,7 +7,6 @@ from .routers import mesero, caja, cocina, auth, admin
 
 app = FastAPI(
     title="Sistema Integral de Cafetería API",
-    description="Backend modular para gestión de mesas, pedidos, caja, facturación y cocina.",
     version="1.0.0"
 )
 
@@ -58,7 +57,7 @@ def startup_event():
                 Usuario(id=1, nombre="Juan Pérez", username="juan.mesero", password_hash=default_hash, rol_id=1),
                 Usuario(id=2, nombre="Ana Gómez", username="ana.caja", password_hash=default_hash, rol_id=2),
                 Usuario(id=3, nombre="Carlos Chef", username="carlos.cocina", password_hash=default_hash, rol_id=3),
-                Usuario(id=4, nombre="Admin Principal", username="admin", password_hash=default_hash, rol_id=4)
+                Usuario(id=4, nombre="Admin Principal", username="admin@ejemplo.com", password_hash=default_hash, rol_id=4)
             ]
             db.add_all(usuarios)
             

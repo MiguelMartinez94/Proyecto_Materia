@@ -9,41 +9,52 @@ services:
       POSTGRES_PASSWORD: admin123
       POSTGRES_DB: cafeteria
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
     build:
-      context: ./fastapi_backend
+      context: ./fastapi
     container_name: cafeteria_backend
     depends_on:
       - db
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:admin123@db:5432/cafeteria
+    volumes:
+      - ./fastapi:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
 
   flask:
     build:
-      context: ./flask_app
+      context: ./flask
     container_name: cafeteria_flask
     depends_on:
       - backend
     environment:
       - FASTAPI_URL=http://backend:8000
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+    volumes:
+      - ./flask:/app
+    command: flask run --host=0.0.0.0 --port=5000
     ports:
       - "5000:5000"
 
   mobile:
     build:
-      context: ./mobile_app
+      context: ./app_movil
     container_name: cafeteria_mobile
     ports:
-      - "8081:8081"
+      - "8082:8082"
     environment:
-      # Dependiendo de tu red local, puede que necesites definir REACT_NATIVE_PACKAGER_HOSTNAME
-      - EXPO_WEB_PORT=8081
+      - REACT_NATIVE_PACKAGER_HOSTNAME=10.199.145.53
+      - EXPO_WEB_PORT=8082
+    volumes:
+      - ./app_movil:/app
+      - /app/node_modules
 
 volumes:
   postgres_data:

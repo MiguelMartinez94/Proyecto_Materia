@@ -1,0 +1,9 @@
+{
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "off",
+  "reportMissingImports": "none",
+  "reportUndefinedVariable": "none",
+  "reportGeneralTypeIssues": "none",
+  "useLibraryCodeForTypes": true,
+  "exclude": ["__pycache__"]
+}

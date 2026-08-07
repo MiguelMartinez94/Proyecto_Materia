@@ -3,23 +3,44 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Mesa, Producto, CategoriaMenu, Orden, DetalleOrden, Usuario
-from ..schemas import MesaOut, ProductoOut, OrdenOut, OrdenCreate, DetalleOrdenCreate, OrdenResumen
+from ..schemas import MesaOut, MesaCreate, ProductoOut, OrdenOut, OrdenCreate, DetalleOrdenCreate, OrdenResumen
 from ..services.payment_service import calcular_totales_orden
-from .auth import require_roles
 
 router = APIRouter(
     prefix="/mesero", 
-    tags=["Mesero"],
-    dependencies=[Depends(require_roles(["MESERO", "ADMINISTRADOR"]))]
+    tags=["Mesero"]
 )
 
 @router.get("/mesas", response_model=List[MesaOut])
 def listar_mesas(estado: Optional[str] = None, db: Session = Depends(get_db)):
     
-    query = db.query(Mesa)
+    query = db.query(Mesa).filter(Mesa.estado != "INACTIVA")
     if estado:
         query = query.filter(Mesa.estado == estado.upper())
     return query.order_by(Mesa.numero).all()
+
+@router.post("/mesas", response_model=MesaOut)
+def crear_mesa(mesa_data: MesaCreate, db: Session = Depends(get_db)):
+    existe = db.query(Mesa).filter(Mesa.numero == mesa_data.numero).first()
+    if existe:
+        if existe.estado == "INACTIVA":
+            existe.estado = "LIBRE"
+            existe.ubicacion = mesa_data.ubicacion
+            db.commit()
+            db.refresh(existe)
+            return existe
+        else:
+            raise HTTPException(status_code=400, detail="El número de mesa ya está registrado y activo")
+    
+    nueva_mesa = Mesa(
+        numero=mesa_data.numero,
+        ubicacion=mesa_data.ubicacion,
+        estado=mesa_data.estado or "LIBRE"
+    )
+    db.add(nueva_mesa)
+    db.commit()
+    db.refresh(nueva_mesa)
+    return nueva_mesa
 
 @router.get("/menu", response_model=List[ProductoOut])
 def obtener_menu(db: Session = Depends(get_db)):
@@ -33,6 +54,14 @@ def crear_orden(orden_data: OrdenCreate, db: Session = Depends(get_db)):
     mesa = db.query(Mesa).filter(Mesa.id == orden_data.mesa_id).first()
     if not mesa:
         raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        
+    orden_activa = db.query(Orden).filter(
+        Orden.mesa_id == orden_data.mesa_id,
+        Orden.estado != "PAGADA"
+    ).first()
+    
+    if orden_activa:
+        raise HTTPException(status_code=400, detail="Esta mesa ya tiene una orden activa. No se pueden crear múltiples cuentas para la misma mesa.")
         
     
     mesero = db.query(Usuario).filter(Usuario.id == orden_data.mesero_id).first()
@@ -141,6 +170,15 @@ def listar_ordenes_activas(db: Session = Depends(get_db)):
         ))
     return resumenes
 
+@router.get("/ordenes/mesa/{mesa_id}", response_model=OrdenOut)
+def obtener_orden_por_mesa(mesa_id: int, db: Session = Depends(get_db)):
+    orden = db.query(Orden).filter(
+        Orden.mesa_id == mesa_id
+    ).order_by(Orden.created_at.desc()).first()
+    if not orden:
+        raise HTTPException(status_code=404, detail="No hay órdenes para esta mesa")
+    return orden
+
 @router.get("/ordenes/{id}", response_model=OrdenOut)
 def detalle_orden(id: int, db: Session = Depends(get_db)):
     
@@ -148,3 +186,28 @@ def detalle_orden(id: int, db: Session = Depends(get_db)):
     if not orden:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     return orden
+
+@router.patch("/mesas/{id}/pedir-cuenta", response_model=MesaOut)
+def pedir_cuenta_mesa(id: int, db: Session = Depends(get_db)):
+    mesa = db.query(Mesa).filter(Mesa.id == id).first()
+    if not mesa:
+        raise HTTPException(status_code=404, detail="Mesa no encontrada")
+    
+    if mesa.estado == "LIBRE":
+        raise HTTPException(status_code=400, detail="No se puede pedir cuenta de una mesa libre")
+        
+    mesa.estado = "POR_COBRAR"
+    db.commit()
+    db.refresh(mesa)
+    return mesa
+
+@router.patch("/mesas/{id}/liberar", response_model=MesaOut)
+def liberar_mesa(id: int, db: Session = Depends(get_db)):
+    mesa = db.query(Mesa).filter(Mesa.id == id).first()
+    if not mesa:
+        raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        
+    mesa.estado = "INACTIVA"
+    db.commit()
+    db.refresh(mesa)
+    return mesa

@@ -5,15 +5,15 @@
     <div class="main-content-split">
         
         <div class="tabs">
-            <button class="tab active">Todos</button>
-            <button class="tab">Cafe</button>
-            <button class="tab">Pastelería</button>
-            <button class="tab">Comida</button>
+            <button class="tab active" onclick="filterMenu('Todos')">Todos</button>
+            <button class="tab" onclick="filterMenu('BEBIDAS')">Bebidas</button>
+            <button class="tab" onclick="filterMenu('ALIMENTOS')">Comida</button>
+            <button class="tab" onclick="filterMenu('POSTRES')">Postres</button>
         </div>
 
         <div class="menu-list">
             {% for p in menu %}
-            <div class="menu-item" {% if p.id == 1 %}style="background-color: var(--accent-bg);"{% endif %}>
+            <div class="menu-item" data-category="{{ p.categoria.nombre if p.categoria else 'General' }}">
                 <div class="menu-item-img" style="background-image: linear-gradient(135deg, #e3d3c4, #eeddce);"></div>
                 <div class="menu-item-info">
                     <div class="menu-item-title">{{ p.nombre }}</div>
@@ -38,7 +38,6 @@
             <div class="panel-header" style="background-color: var(--main-bg); border-bottom: none; padding-bottom: 0;">
                 <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div class="panel-subtitle">GESTIÓN DE PRODUCTO</div>
                         <h3 class="panel-title">Nuevo Platillo</h3>
                     </div>
                     <div style="display: flex; gap: 1rem;">
@@ -57,11 +56,11 @@
                     <div style="flex-grow: 1;">
                         <div class="form-group">
                             <label class="form-label">NOMBRE DEL PLATILLO</label>
-                            <input type="text" name="nombre" class="form-control" placeholder="Ej. Latte" required>
+                            <input type="text" name="nombre" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">DESCRIPCIÓN</label>
-                            <input type="text" name="descripcion" class="form-control" placeholder="Ej. Bebida Caliente">
+                            <input type="text" name="descripcion" class="form-control">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -76,23 +75,31 @@
                                 <label class="form-label">PRECIO DE VENTA</label>
                                 <div style="position: relative;">
                                     <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%);">$</span>
-                                    <input type="number" step="0.01" name="precio" class="form-control" placeholder="65.00" style="padding-left: 1.5rem;" required>
+                                    <input type="number" step="0.01" name="precio" class="form-control" style="padding-left: 1.5rem;" required>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card" style="padding: 1.5rem;">
-                    <div class="add-ingredient">
-                        <div>
-                            <div style="font-weight: 600; font-family: var(--font-serif); font-size: 1.1rem;">Descuento de Inventario</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 250px;">(Por el momento la asignación de recetas se hace desde otra pantalla o backend).</div>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function filterMenu(category) {
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+        if (category === 'Todos' || item.getAttribute('data-category') === category) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+</script>
 {% endblock %}

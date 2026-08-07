@@ -11,8 +11,7 @@ from .auth import require_roles
 
 router = APIRouter(
     prefix="/caja", 
-    tags=["Caja"],
-    dependencies=[Depends(require_roles(["CAJERO", "ADMINISTRADOR"]))]
+    tags=["Caja"]
 )
 
 @router.get("/pendientes", response_model=List[OrdenResumen])
@@ -20,7 +19,10 @@ def listar_ordenes_pendientes(db: Session = Depends(get_db)):
     
     
     
-    ordenes_pendientes = db.query(Orden).filter(Orden.estado != "PAGADA").order_by(Orden.created_at.asc()).all()
+    ordenes_pendientes = db.query(Orden).join(Mesa).filter(
+        Orden.estado != "PAGADA",
+        Mesa.estado == "POR_COBRAR"
+    ).order_by(Orden.created_at.asc()).all()
     
     resumenes = []
     for o in ordenes_pendientes:

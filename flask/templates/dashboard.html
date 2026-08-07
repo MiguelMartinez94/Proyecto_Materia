@@ -6,29 +6,49 @@
         <h2 class="page-title">Dashboard</h2>
     </div>
 
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div style="background-color: #e8f5e9; color: #2e7d32; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-title">Ventas del día</div>
-            <div class="stat-value">$4,280.0</div>
+            <div class="stat-value">${{ "%.2f"|format(data.get('ventas_dia', 0)) }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-title">Pedidos Pendientes</div>
-            <div class="stat-value">18</div>
+            <div class="stat-value">{{ data.get('pedidos_pendientes', 0) }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-title">Stock Crítico</div>
-            <div class="stat-value danger">12</div>
+            <div class="stat-value danger">{{ data.get('stock_critico_count', 0) }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-title">Ingresos Semanales</div>
-            <div class="stat-value">$24,912</div>
+            <div class="stat-value">${{ "%.2f"|format(data.get('ventas_semanales', 0)) }}</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <h3 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.25rem;">Ventas de la Semana</h3>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Resumen de los últimos 7 días</div>
+            </div>
+        </div>
+        <div style="height: 250px;">
+            <canvas id="weeklyChart"></canvas>
         </div>
     </div>
 
     <div class="card" style="padding: 0;">
         <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent-border);">
             <h3 style="font-family: var(--font-serif); font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span class="icon-warning" style="color: var(--danger); font-size: 1.2rem;">&#9888;</span> Alertas de Inventario
+                Alertas de Inventario
             </h3>
             <a href="/inventario" style="color: var(--text-dark); text-decoration: none; font-size: 0.85rem; font-weight: 600;">Ver todo el inventario</a>
         </div>
@@ -37,68 +57,87 @@
                 <thead>
                     <tr>
                         <th>Insumo</th>
-                        <th>Categoría</th>
                         <th>Stock Actual</th>
-                        <th>Acción</th>
+                        <th>Stock Mínimo</th>
+                        <th>Unidad</th>
+                        <th>Estado</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td style="font-weight: 600;">Pan Blanco Hamburguesa</td>
-                        <td style="color: var(--text-muted);">Pan</td>
-                        <td>
-                            <div class="stock-indicator-container">
-                                <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
-                                <span class="stock-text critical">1 Paquete</span>
-                            </div>
-                        </td>
-                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Café de Grano Libanés</td>
-                        <td style="color: var(--text-muted);">Café</td>
-                        <td>
-                            <div class="stock-indicator-container">
-                                <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
-                                <span class="stock-text critical">1 Kg</span>
-                            </div>
-                        </td>
-                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Leche Entera</td>
-                        <td style="color: var(--text-muted);">Lácteos</td>
-                        <td>
-                            <div class="stock-indicator-container">
-                                <div class="stock-bar-bg"><div class="stock-bar-fill warning"></div></div>
-                                <span class="stock-text warning">2 Litros</span>
-                            </div>
-                        </td>
-                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Cerezas en Almíbar</td>
-                        <td style="color: var(--text-muted);">Fruta</td>
-                        <td>
-                            <div class="stock-indicator-container">
-                                <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
-                                <span class="stock-text critical">0.1 Kg</span>
-                            </div>
-                        </td>
-                        <td><button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Reordenar</button></td>
-                    </tr>
+                    {% set criticos = data.get('ingredientes_criticos', []) %}
+                    {% if criticos %}
+                        {% for i in criticos %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ i.nombre }}</td>
+                            <td>
+                                <div class="stock-indicator-container">
+                                    <div class="stock-bar-bg"><div class="stock-bar-fill critical"></div></div>
+                                    <span class="stock-text critical">{{ i.stock_actual }}</span>
+                                </div>
+                            </td>
+                            <td style="color: var(--text-muted);">{{ i.stock_minimo }}</td>
+                            <td style="color: var(--text-muted);">{{ i.unidad_medida }}</td>
+                            <td><span class="badge" style="background-color: #ffebee; color: var(--danger); font-weight: 600;">Crítico</span></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                No hay ingredientes
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
-        <div style="padding: 1.5rem; background-color: var(--accent-bg); border-top: 1px solid var(--accent-border);">
-            <div class="pagination" style="padding: 0; justify-content: flex-end;">
-                <div class="page-controls">
-                    <button class="page-btn">&lsaquo;</button>
-                    <span style="font-weight: 600; color: var(--text-dark);">Página 1 de 4</span>
-                    <button class="page-btn">&rsaquo;</button>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const labels = {{ data.get('grafica_dias_labels', []) | tojson }};
+    const values = {{ data.get('grafica_ventas_diarias', []) | tojson }};
+
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: values,
+                backgroundColor: '#4a3b2c',
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f5ece4' },
+                    ticks: {
+                        callback: function(value) { return '$' + value.toLocaleString(); },
+                        font: { family: 'Inter', size: 11 },
+                        color: '#6e5c4f'
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { family: 'Inter', size: 11, weight: 600 },
+                        color: '#6e5c4f'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
