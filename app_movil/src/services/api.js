@@ -27,6 +27,14 @@ export const setToken = (token) => {
   currentToken = token;
 };
 
+export const setBaseURL = (ip) => {
+  if (ip) {
+    const newURL = ip.includes("http") ? ip : `http://${ip}:8000`;
+    api.defaults.baseURL = newURL;
+    console.log("[API] Base URL updated to:", newURL);
+  }
+};
+
 api.interceptors.request.use(
   (config) => {
     if (currentToken) {

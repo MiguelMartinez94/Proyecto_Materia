@@ -6,7 +6,6 @@ import { DEFAULT_API_URL } from '../services/api';
 export const NotificationContext = createContext();
 
 const getWsUrl = (rol, userId) => {
-    // Reemplaza http:// o https:// por ws:// o wss://
     const baseUrl = DEFAULT_API_URL.replace(/^http(s?):\/\//i, 'ws$1://');
     return `${baseUrl}/notificaciones/ws/${rol}/${userId}`;
 };

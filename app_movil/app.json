@@ -1,29 +1,35 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Coffee Code",
+    "slug": "coffee-code",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Coffee Code.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Coffee Code.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4E342E"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.coffeecode.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/Coffee Code.png",
+        "backgroundColor": "#4E342E"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "825d1b23-1942-4f98-80bf-15e6de0f5ef7"
+      }
     }
   }
 }

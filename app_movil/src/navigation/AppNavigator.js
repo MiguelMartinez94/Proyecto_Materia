@@ -4,7 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, StatusBar, ActivityIndicator, Alert, Platform, Image, KeyboardAvoidingView, ScrollView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../theme";
-import api, { setToken } from "../services/api";
+import api, { setToken, setBaseURL } from "../services/api";
 
 import MeseroStack from "./MeseroStack";
 import CajaStack from "./CajaStack";
@@ -16,8 +16,23 @@ const RootStack = createStackNavigator();
 function LoginScreen({ navigation }) {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
+  const [serverIP, setServerIP] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  React.useEffect(() => {
+    const loadIP = async () => {
+      try {
+        const savedIP = await AsyncStorage.getItem("server_ip");
+        if (savedIP) {
+          setServerIP(savedIP);
+        }
+      } catch (e) {
+        console.error("Failed to load IP", e);
+      }
+    };
+    loadIP();
+  }, []);
 
   const handleLogin = async () => {
     if (!correo || !password) {
@@ -28,6 +43,11 @@ function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
+      if (serverIP) {
+        await AsyncStorage.setItem("server_ip", serverIP.trim());
+        setBaseURL(serverIP.trim());
+      }
+
       const params = new URLSearchParams();
       params.append('username', correo);
       params.append('password', password);
@@ -127,6 +147,18 @@ function LoginScreen({ navigation }) {
           />
         </View>
 
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>IP</Text>
+          <TextInput 
+            style={styles.input}
+            placeholder="Ej: 192.168.1.20"
+            value={serverIP}
+            onChangeText={setServerIP}
+            keyboardType="default"
+            autoCapitalize="none"
+          />
+        </View>
+
         <TouchableOpacity 
           style={styles.loginButton}
           onPress={handleLogin}
@@ -154,6 +186,11 @@ export default function AppNavigator() {
   React.useEffect(() => {
     const checkToken = async () => {
       try {
+        const savedIP = await AsyncStorage.getItem("server_ip");
+        if (savedIP) {
+          setBaseURL(savedIP);
+        }
+
         const token = await AsyncStorage.getItem("userToken");
         const role = await AsyncStorage.getItem("userRole");
         if (token && role) {
