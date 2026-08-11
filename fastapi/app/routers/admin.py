@@ -85,8 +85,12 @@ def eliminar_usuario(id: int, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    usuario.activo = False
-    db.commit()
+    try:
+        db.delete(usuario)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="No se puede eliminar el usuario porque tiene registros asociados.")
     return None
 
 
@@ -170,7 +174,7 @@ def crear_categoria(categoria: CategoriaMenuCreate, db: Session = Depends(get_db
 
 @router.get("/menu/productos", response_model=List[ProductoOut])
 def listar_productos(db: Session = Depends(get_db)):
-    return db.query(Producto).all()
+    return db.query(Producto).filter(Producto.disponible == True).all()
 
 @router.post("/menu/productos", response_model=ProductoOut)
 def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db)):

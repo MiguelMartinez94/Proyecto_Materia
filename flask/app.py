@@ -116,8 +116,11 @@ def usuarios():
             else: flash("Error al actualizar usuario")
         elif action == 'delete':
             id = request.form.get('id')
-            fetch_api(f"/admin/usuarios/{id}", method='DELETE')
-            flash("Usuario desactivado")
+            res = fetch_api(f"/admin/usuarios/{id}", method='DELETE')
+            if res:
+                flash("Usuario eliminado exitosamente")
+            else:
+                flash("No se pudo eliminar el usuario (probablemente tenga registros asociados)")
         elif action == 'toggle_status':
             id = request.form.get('id')
             new_status = request.form.get('new_status') == 'true'

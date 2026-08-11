@@ -97,7 +97,7 @@
                         <th>Total</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="pedidosTableBody">
                     {% for p in estadisticas.pedidos %}
                     <tr>
                         <td style="font-weight: 600;">#{{ p.id }}</td>
@@ -122,12 +122,22 @@
                     </tr>
                     {% endfor %}
                     {% if not estadisticas.pedidos %}
-                    <tr>
+                    <tr class="no-pedidos-row">
                         <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay pedidos en este periodo</td>
                     </tr>
                     {% endif %}
                 </tbody>
             </table>
+        </div>
+        <div style="padding: 0 1.5rem 1.5rem 1.5rem;">
+            <div class="pagination">
+                <span id="pedidosPaginationLegend">Mostrando registros</span>
+                <div class="page-controls">
+                    <button class="page-btn" id="pedidosPrevBtn" onclick="changePedidosPage(-1)">&lsaquo;</button>
+                    <span style="font-weight: 600; color: var(--text-dark);" id="pedidosPageIndicator">Página 1</span>
+                    <button class="page-btn" id="pedidosNextBtn" onclick="changePedidosPage(1)">&rsaquo;</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -263,6 +273,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    const pedidosPerPage = 10;
+    let currentPedidosPage = 1;
+
+    window.changePedidosPage = function(delta) {
+        currentPedidosPage += delta;
+        renderPedidosPage();
+    };
+
+    function renderPedidosPage() {
+        const tableBody = document.getElementById('pedidosTableBody');
+        if (!tableBody) return;
+        const rows = Array.from(tableBody.querySelectorAll('tr:not(.no-pedidos-row)'));
+        if (rows.length === 0) return;
+        
+        const totalPages = Math.ceil(rows.length / pedidosPerPage) || 1;
+        if (currentPedidosPage > totalPages) currentPedidosPage = totalPages;
+        if (currentPedidosPage < 1) currentPedidosPage = 1;
+        
+        const start = (currentPedidosPage - 1) * pedidosPerPage;
+        const end = start + pedidosPerPage;
+        
+        rows.forEach((row, index) => {
+            row.style.display = (index >= start && index < end) ? '' : 'none';
+        });
+        
+        document.getElementById('pedidosPageIndicator').textContent = `Página ${currentPedidosPage} de ${totalPages}`;
+        const endCount = Math.min(end, rows.length);
+        document.getElementById('pedidosPaginationLegend').textContent = `Mostrando ${start + 1} a ${endCount} de ${rows.length} pedidos`;
+        
+        document.getElementById('pedidosPrevBtn').disabled = (currentPedidosPage === 1);
+        document.getElementById('pedidosNextBtn').disabled = (currentPedidosPage === totalPages);
+    }
+
+    renderPedidosPage();
 });
 </script>
 {% endblock %}

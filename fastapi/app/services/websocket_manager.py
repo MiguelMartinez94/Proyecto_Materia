@@ -4,8 +4,6 @@ from typing import Dict, List, Any
 
 class ConnectionManager:
     def __init__(self):
-        # Dictionary to store connections grouped by role
-        # Example: {"MESERO": [ws1, ws2], "COCINA": [ws3]}
         self.active_connections: Dict[str, List[WebSocket]] = {
             "MESERO": [],
             "CAJERO": [],
