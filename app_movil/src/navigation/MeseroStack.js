@@ -1,8 +1,11 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Text } from "react-native";
+import { Text, Image, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 import { COLORS } from "../theme";
+import NotificationButton from "../components/NotificationButton";
 
 
 import ListaDeMesasScreen from "../screens/mesero/ListaDeMesasScreen";
@@ -14,7 +17,27 @@ import DetalleOrdenScreen from "../screens/mesero/DetalleOrdenScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+const LogoTitle = () => (
+  <Image 
+    source={require("../../assets/Coffee Code.jpeg")} 
+    style={{ width: 40, height: 40, borderRadius: 20 }} 
+  />
+);
+
 function MeseroTabs() {
+  const navigation = useNavigation();
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userRole');
+    await AsyncStorage.removeItem('userName');
+    await AsyncStorage.removeItem('userId');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -43,7 +66,15 @@ function MeseroTabs() {
           fontWeight: "bold",
           color: COLORS.textDark,
         },
-        headerTitle: "Coffee Code",
+        headerTitle: (props) => <LogoTitle {...props} />,
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <NotificationButton />
+            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15, padding: 5 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>Salir</Text>
+            </TouchableOpacity>
+          </View>
+        ),
       })}
     >
       <Tab.Screen 
@@ -78,7 +109,7 @@ export default function MeseroStack() {
         headerTitleStyle: {
           fontWeight: "bold",
         },
-        headerTitle: "Coffee Code",
+        headerTitle: (props) => <LogoTitle {...props} />,
       }}
     >
       <Stack.Screen 
@@ -89,12 +120,12 @@ export default function MeseroStack() {
       <Stack.Screen 
         name="ResumenPedido" 
         component={ResumenPedidoScreen} 
-        options={{ headerTitle: "Coffee Code" }} 
+        options={{ headerTitle: (props) => <LogoTitle {...props} /> }} 
       />
       <Stack.Screen 
         name="DetalleOrden" 
         component={DetalleOrdenScreen} 
-        options={{ headerTitle: "Coffee Code" }} 
+        options={{ headerTitle: (props) => <LogoTitle {...props} /> }} 
       />
     </Stack.Navigator>
   );

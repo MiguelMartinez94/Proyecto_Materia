@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, SafeAreaView, Alert, ActivityIndicator, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
 
@@ -11,6 +12,17 @@ export default function ResumenPedidoScreen({ route, navigation }) {
   const isSubmitting = useRef(false);
   const [itemEditandoNota, setItemEditandoNota] = useState(null); 
   const [notaTemp, setNotaTemp] = useState("");
+  const [meseroId, setMeseroId] = useState(1);
+
+  React.useEffect(() => {
+    const fetchId = async () => {
+      const idStr = await AsyncStorage.getItem("userId");
+      if (idStr) {
+        setMeseroId(parseInt(idStr, 10));
+      }
+    };
+    fetchId();
+  }, []);
 
   const actualizarCantidad = (productoId, delta) => {
     setCarrito(prev => {
@@ -78,7 +90,7 @@ export default function ResumenPedidoScreen({ route, navigation }) {
       } else {
         const payload = {
           mesa_id: mesaId,
-          mesero_id: 1, 
+          mesero_id: meseroId, 
           items: itemsPayload
         };
         await api.post("/mesero/ordenes", payload);

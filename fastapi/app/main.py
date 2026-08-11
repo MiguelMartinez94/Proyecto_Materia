@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base, SessionLocal, is_sqlite
 from .models import Role, Usuario, Mesa, CategoriaMenu, Ingrediente, Producto, ProductoIngrediente, ConfiguracionNegocio
-from .routers import mesero, caja, cocina, auth, admin
+from .routers import mesero, caja, cocina, auth, admin, notificaciones
 
 app = FastAPI(
     title="Sistema Integral de Cafetería API",
@@ -25,6 +25,7 @@ app.include_router(caja.router)
 app.include_router(cocina.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(notificaciones.router)
 
 @app.on_event("startup")
 def startup_event():

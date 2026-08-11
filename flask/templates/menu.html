@@ -14,58 +14,62 @@
         <div class="menu-list">
             {% for p in menu %}
             <div class="menu-item" data-category="{{ p.categoria.nombre if p.categoria else 'General' }}">
-                <div class="menu-item-img" style="background-image: linear-gradient(135deg, #e3d3c4, #eeddce);"></div>
+                <div class="menu-item-img" style="background-image: {% if p.imagen_url %}url('{{ p.imagen_url }}'){% else %}linear-gradient(135deg, #e3d3c4, #eeddce){% endif %}; background-size: cover; background-position: center;"></div>
                 <div class="menu-item-info">
                     <div class="menu-item-title">{{ p.nombre }}</div>
                     <div class="menu-item-desc">{{ p.categoria.nombre if p.categoria else 'General' }} &bull; {{ p.descripcion or 'Sin descripción' }}</div>
                     <div class="menu-item-price">${{ "%.2f"|format(p.precio) }}</div>
                 </div>
-                <form method="POST" action="{{ url_for('menu') }}" style="display:inline;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="{{ p.id }}">
-                    <button type="submit" style="background:none; border:none; cursor:pointer;" onclick="return confirm('¿Eliminar producto?');">
-                        <span class="action-icon" style="mask-image: url('data:image/svg+xml;utf8,<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z\"/></svg>'); width: 24px; height: 24px; display: inline-block; background-color: var(--text-muted);"></span>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button type="button" onclick="editMenu({{ p.id }}, '{{ p.nombre | replace('\'', '\\\'') }}', '{{ p.descripcion | replace('\'', '\\\'') }}', {{ p.precio }}, {{ p.categoria_id }}, '{{ p.imagen_url or '' }}')" style="background:none; border:1px solid var(--accent-border); border-radius:4px; padding:0.35rem 0.6rem; cursor:pointer; font-size:0.75rem; color:var(--text-dark);" title="Editar">
+                        Editar
                     </button>
-                </form>
+                    <button type="button" onclick="confirmDelete({{ p.id }})" style="background:none; border:1px solid var(--accent-border); border-radius:4px; padding:0.35rem 0.6rem; cursor:pointer; font-size:0.75rem; color:var(--danger);" title="Eliminar">
+                        Eliminar
+                    </button>
+                </div>
             </div>
             {% endfor %}
         </div>
     </div>
     
     <div class="right-panel open" style="width: 500px;">
-        <form method="POST" action="{{ url_for('menu') }}">
-            <input type="hidden" name="action" value="create">
+        <form method="POST" action="{{ url_for('menu') }}" enctype="multipart/form-data" id="menuForm">
+            <input type="hidden" name="action" value="create" id="formMenuAction">
+            <input type="hidden" name="id" id="formMenuId">
             <div class="panel-header" style="background-color: var(--main-bg); border-bottom: none; padding-bottom: 0;">
                 <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h3 class="panel-title">Nuevo Platillo</h3>
+                        <h3 class="panel-title" id="menuPanelTitle">Nuevo Platillo</h3>
                     </div>
                     <div style="display: flex; gap: 1rem;">
-                        <button type="button" class="btn btn-outline panel-close" style="padding: 0.5rem 1rem;">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Guardar Producto</button>
+                        <button type="button" class="btn btn-outline panel-close" style="padding: 0.5rem 1rem;" onclick="resetMenuForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;" id="menuSubmitBtn">Guardar Producto</button>
                     </div>
                 </div>
             </div>
             <div class="panel-body" style="background-color: var(--main-bg);">
                 
                 <div class="card" style="display: flex; gap: 1.5rem; margin-bottom: 1.5rem;">
-                    <div class="image-upload-placeholder" style="width: 200px; height: 200px; margin: 0; flex-shrink: 0;">
-                        <span class="icon-upload"></span>
-                        <span style="font-size: 0.75rem; margin-top: 0.5rem; text-align: center; padding: 0 1rem;">Arrastra o haz clic para subir imagen</span>
-                    </div>
+                    <label class="image-upload-placeholder" style="width: 200px; height: 200px; margin: 0; flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden;" id="imagePreviewContainer">
+                        <input type="file" name="imagen" accept="image/*" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;" onchange="previewImage(this)">
+                        <span class="icon-upload" id="uploadIcon"></span>
+                        <span style="font-size: 0.75rem; margin-top: 0.5rem; text-align: center; padding: 0 1rem;" id="uploadText">Arrastra o haz clic para subir imagen</span>
+                        <img id="imagePreview" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: none;">
+                    </label>
                     <div style="flex-grow: 1;">
                         <div class="form-group">
                             <label class="form-label">NOMBRE DEL PLATILLO</label>
-                            <input type="text" name="nombre" class="form-control" required>
+                            <input type="text" name="nombre" id="menuNombre" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">DESCRIPCIÓN</label>
-                            <input type="text" name="descripcion" class="form-control">
+                            <input type="text" name="descripcion" id="menuDescripcion" class="form-control">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">CATEGORÍA</label>
-                                <select name="categoria_id" class="form-control" required>
+                                <select name="categoria_id" id="menuCategoria" class="form-control" required>
                                     {% for c in categorias %}
                                     <option value="{{ c.id }}">{{ c.nombre }}</option>
                                     {% endfor %}
@@ -75,7 +79,7 @@
                                 <label class="form-label">PRECIO DE VENTA</label>
                                 <div style="position: relative;">
                                     <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%);">$</span>
-                                    <input type="number" step="0.01" name="precio" class="form-control" style="padding-left: 1.5rem;" required>
+                                    <input type="number" step="0.01" name="precio" id="menuPrecio" class="form-control" style="padding-left: 1.5rem;" required>
                                 </div>
                             </div>
                         </div>
@@ -84,6 +88,19 @@
 
 
             </div>
+        </form>
+    </div>
+</div>
+
+<div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: var(--main-bg); padding: 2rem; border-radius: 8px; width: 400px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; font-family: var(--font-serif); font-size: 1.5rem;">Confirmar Eliminación</h3>
+        <p style="color: var(--text-muted); line-height: 1.5;">¿Estás seguro de que deseas eliminar este platillo? Esta acción no se puede deshacer.</p>
+        <form method="POST" action="{{ url_for('menu') }}" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="deleteMenuId">
+            <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+            <button type="submit" class="btn" style="background-color: var(--danger); color: white; border-color: var(--danger);">Eliminar</button>
         </form>
     </div>
 </div>
@@ -100,6 +117,68 @@ function filterMenu(category) {
             item.style.display = 'none';
         }
     });
+}
+
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('imagePreview').src = e.target.result;
+            document.getElementById('imagePreview').style.display = 'block';
+            document.getElementById('uploadIcon').style.display = 'none';
+            document.getElementById('uploadText').style.display = 'none';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function editMenu(id, nombre, descripcion, precio, categoria_id, imagen_url) {
+    document.getElementById('formMenuAction').value = 'update';
+    document.getElementById('formMenuId').value = id;
+    document.getElementById('menuNombre').value = nombre;
+    document.getElementById('menuDescripcion').value = descripcion;
+    document.getElementById('menuPrecio').value = precio;
+    document.getElementById('menuCategoria').value = categoria_id;
+    
+    document.getElementById('menuPanelTitle').textContent = 'Editar Platillo';
+    document.getElementById('menuSubmitBtn').textContent = 'Actualizar Producto';
+    
+    if (imagen_url) {
+        document.getElementById('imagePreview').src = imagen_url;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('uploadIcon').style.display = 'none';
+        document.getElementById('uploadText').style.display = 'none';
+    } else {
+        document.getElementById('imagePreview').style.display = 'none';
+        document.getElementById('imagePreview').src = '';
+        document.getElementById('uploadIcon').style.display = 'inline-block';
+        document.getElementById('uploadText').style.display = 'inline-block';
+    }
+    
+    // Si hay un contenedor de panel derecho (ej. clase right-panel.open) 
+    // asumimos que ya está abierto en layout split, pero podemos asegurar
+}
+
+function resetMenuForm() {
+    document.getElementById('formMenuAction').value = 'create';
+    document.getElementById('formMenuId').value = '';
+    document.getElementById('menuForm').reset();
+    document.getElementById('menuPanelTitle').textContent = 'Nuevo Platillo';
+    document.getElementById('menuSubmitBtn').textContent = 'Guardar Producto';
+    
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imagePreview').src = '';
+    document.getElementById('uploadIcon').style.display = 'inline-block';
+    document.getElementById('uploadText').style.display = 'inline-block';
+}
+
+function confirmDelete(id) {
+    document.getElementById('deleteMenuId').value = id;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
 }
 </script>
 {% endblock %}

@@ -100,6 +100,7 @@ class ProductoBase(BaseSchema):
     descripcion: Optional[str] = None
     precio: float = Field(..., ge=0)
     disponible: bool = True
+    imagen_url: Optional[str] = None
 
 class ProductoCreate(ProductoBase):
     pass
@@ -110,6 +111,7 @@ class ProductoUpdate(BaseSchema):
     descripcion: Optional[str] = None
     precio: Optional[float] = Field(None, ge=0)
     disponible: Optional[bool] = None
+    imagen_url: Optional[str] = None
 
 class ProductoOut(ProductoBase):
     id: int
@@ -173,7 +175,7 @@ class OrdenResumen(BaseSchema):
     items_count: int
 
 class OrdenUpdateEstado(BaseSchema):
-    estado: str = Field(..., pattern="^(EN_ESPERA|EN_PREPARACION|LISTA|PAGADA)$")
+    estado: str = Field(..., pattern="^(EN_ESPERA|EN_PREPARACION|LISTA|ENTREGADA|PAGADA)$")
 
 
 

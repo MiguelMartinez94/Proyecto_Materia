@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, TextInput } from "react-native";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
 
@@ -12,6 +12,30 @@ const MOCK_VENTAS_DETALLE = [
 export default function GestionMonetariaScreen({ navigation }) {
   const [ingresos, setIngresos] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("ingresos");
+  const [gastos, setGastos] = useState([]);
+  const [modalGastosVisible, setModalGastosVisible] = useState(false);
+  const [nuevoGastoMonto, setNuevoGastoMonto] = useState("");
+  const [nuevoGastoDesc, setNuevoGastoDesc] = useState("");
+
+  const handleAddGasto = () => {
+    if (!nuevoGastoMonto || !nuevoGastoDesc) return;
+    const monto = parseFloat(nuevoGastoMonto);
+    if (isNaN(monto)) return;
+    
+    setGastos([
+      ...gastos,
+      {
+        id: Date.now(),
+        descripcion: nuevoGastoDesc,
+        monto: monto,
+        created_at: new Date().toISOString()
+      }
+    ]);
+    setNuevoGastoMonto("");
+    setNuevoGastoDesc("");
+    setModalGastosVisible(false);
+  };
 
   const fetchIngresos = async () => {
     setLoading(true);
@@ -58,15 +82,12 @@ export default function GestionMonetariaScreen({ navigation }) {
   const renderVentaItem = ({ item }) => {
     return (
       <View style={styles.ventaRow}>
-        <View style={styles.ventaIconCont}>
-          <Text style={styles.ventaIcon}>{item.metodo_pago === "EFECTIVO" ? "" : ""}</Text>
-        </View>
         <View style={styles.ventaInfo}>
           <Text style={styles.ventaMesa}>
             Mesa {item.mesa_numero || item.orden_id} - {item.mesa_ubicacion || "Salón"}
           </Text>
           <Text style={styles.ventaFolio}>
-            {formatHora(item.created_at)} • {item.metodo_pago}
+            {formatHora(item.created_at)} - {item.metodo_pago}
           </Text>
         </View>
         <Text style={styles.ventaMonto}>+${item.total_pagado.toFixed(2)}</Text>
@@ -82,51 +103,125 @@ export default function GestionMonetariaScreen({ navigation }) {
         
 
         <View style={styles.toggleRow}>
-          <TouchableOpacity style={[styles.toggleBtn, styles.toggleBtnActive]}>
-            <Text style={[styles.toggleBtnText, styles.toggleBtnTextActive]}>Ingresos del día</Text>
+          <TouchableOpacity 
+            style={[styles.toggleBtn, activeTab === "ingresos" && styles.toggleBtnActive]}
+            onPress={() => setActiveTab("ingresos")}
+          >
+            <Text style={[styles.toggleBtnText, activeTab === "ingresos" && styles.toggleBtnTextActive]}>Ingresos del día</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.toggleBtn}>
-            <Text style={styles.toggleBtnText}>Registros gastos</Text>
+          <TouchableOpacity 
+            style={[styles.toggleBtn, activeTab === "gastos" && styles.toggleBtnActive]}
+            onPress={() => setActiveTab("gastos")}
+          >
+            <Text style={[styles.toggleBtnText, activeTab === "gastos" && styles.toggleBtnTextActive]}>Registros gastos</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollViewContainer>
-        {ingresos && (
+        {activeTab === "ingresos" ? (
+          <>
+            {ingresos && (
+              <View style={styles.dashboard}>
+                <View style={styles.mainCard}>
+                  <Text style={styles.mainCardLabel}>VENTAS TOTALES</Text>
+                  <Text style={styles.mainCardVal}>${ingresos.total_vendido.toFixed(2)}</Text>
+                </View>
+                <View style={styles.subCardsRow}>
+                  <View style={styles.subCard}>
+                    <Text style={styles.subCardLabel}>ÓRDENES COBRADAS</Text>
+                    <Text style={styles.subCardVal}>{ingresos.ordenes_cobradas}</Text>
+                  </View>
+                  <View style={styles.subCard}>
+                    <Text style={styles.subCardLabel}>TICKET PROMEDIO</Text>
+                    <Text style={styles.subCardVal}>${ingresos.ticket_promedio.toFixed(2)}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <Text style={styles.seccionTitulo}>DETALLE DE COBROS</Text>
+
+            <FlatList
+              data={ingresos?.ventas_detalle || []}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderVentaItem}
+              scrollEnabled={false} 
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No hay registros de ventas para el día de hoy.</Text>
+              }
+            />
+          </>
+        ) : (
           <View style={styles.dashboard}>
-
             <View style={styles.mainCard}>
-              <Text style={styles.mainCardLabel}>VENTAS TOTALES</Text>
-              <Text style={styles.mainCardVal}>${ingresos.total_vendido.toFixed(2)}</Text>
+              <Text style={styles.mainCardLabel}>GASTOS TOTALES</Text>
+              <Text style={styles.mainCardVal}>${gastos.reduce((acc, g) => acc + g.monto, 0).toFixed(2)}</Text>
             </View>
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 10, alignItems: "center", marginVertical: 10 }}
+              onPress={() => setModalGastosVisible(true)}
+            >
+              <Text style={{ color: COLORS.white, fontWeight: "bold" }}>+ Agregar Gasto</Text>
+            </TouchableOpacity>
 
+            <Text style={styles.seccionTitulo}>HISTORIAL DE GASTOS</Text>
 
-            <View style={styles.subCardsRow}>
-              <View style={styles.subCard}>
-                <Text style={styles.subCardLabel}>ÓRDENES COBRADAS</Text>
-                <Text style={styles.subCardVal}>{ingresos.ordenes_cobradas}</Text>
-              </View>
-              <View style={styles.subCard}>
-                <Text style={styles.subCardLabel}>TICKET PROMEDIO</Text>
-                <Text style={styles.subCardVal}>${ingresos.ticket_promedio.toFixed(2)}</Text>
-              </View>
-            </View>
+            <FlatList
+              data={gastos}
+              keyExtractor={(item) => item.id.toString()}
+              scrollEnabled={false}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={<Text style={styles.emptyText}>No hay registros de gastos de hoy.</Text>}
+              renderItem={({ item }) => (
+                <View style={styles.ventaRow}>
+                  <View style={styles.ventaInfo}>
+                    <Text style={styles.ventaMesa}>{item.descripcion}</Text>
+                    <Text style={styles.ventaFolio}>{formatHora(item.created_at)}</Text>
+                  </View>
+                  <Text style={[styles.ventaMonto, { color: "#E74C3C" }]}>-${item.monto.toFixed(2)}</Text>
+                </View>
+              )}
+            />
           </View>
         )}
-
-        <Text style={styles.seccionTitulo}>DETALLE DE COBROS</Text>
-
-        <FlatList
-          data={ingresos?.ventas_detalle || []}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderVentaItem}
-          scrollEnabled={false} 
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No hay registros de ventas para el día de hoy.</Text>
-          }
-        />
       </ScrollViewContainer>
+
+      <Modal visible={modalGastosVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Nuevo Gasto</Text>
+            
+            <Text style={styles.inputLabel}>Descripción</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="Ej. Compra de insumos" 
+              value={nuevoGastoDesc} 
+              onChangeText={setNuevoGastoDesc} 
+            />
+            
+            <Text style={styles.inputLabel}>Monto ($)</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="0.00" 
+              keyboardType="numeric" 
+              value={nuevoGastoMonto} 
+              onChangeText={setNuevoGastoMonto} 
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setModalGastosVisible(false)}>
+                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtnSubmit} onPress={handleAddGasto}>
+                <Text style={styles.modalBtnSubmitText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -258,18 +353,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  ventaIconCont: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  ventaIcon: {
-    fontSize: 18,
-  },
+
   ventaInfo: {
     flex: 1,
   },
@@ -293,4 +377,34 @@ const styles = StyleSheet.create({
     marginTop: 30,
     color: COLORS.textLight,
   },
+  modalOverlay: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center"
+  },
+  modalContent: {
+    width: "85%", backgroundColor: COLORS.background, borderRadius: 16, padding: 20
+  },
+  modalTitle: {
+    fontSize: 18, fontWeight: "bold", color: COLORS.textDark, marginBottom: 15, textAlign: "center"
+  },
+  inputLabel: {
+    fontSize: 12, color: COLORS.textLight, marginBottom: 5
+  },
+  input: {
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 14, color: COLORS.textDark
+  },
+  modalButtons: {
+    flexDirection: "row", justifyContent: "space-between", marginTop: 10
+  },
+  modalBtnCancel: {
+    flex: 1, padding: 12, alignItems: "center", marginRight: 10, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border
+  },
+  modalBtnSubmit: {
+    flex: 1, padding: 12, alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 8
+  },
+  modalBtnCancelText: {
+    color: COLORS.textLight, fontWeight: "bold"
+  },
+  modalBtnSubmitText: {
+    color: COLORS.white, fontWeight: "bold"
+  }
 });

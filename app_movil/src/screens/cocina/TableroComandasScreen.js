@@ -57,12 +57,26 @@ export default function TableroComandasScreen({ navigation }) {
       
       Alert.alert("Inventario Insuficiente", errorMsg);
       
-      
       if (!error.response) {
         setComandas(prev => 
           prev.map(c => c.id === ordenId ? { ...c, estado: "EN_PREPARACION" } : c)
         );
         Alert.alert("Simulación Offline", "Preparación iniciada localmente.");
+      }
+    }
+  };
+
+  const marcarComoEntregado = async (ordenId) => {
+    try {
+      await api.patch(`/cocina/orden/${ordenId}/estado`, { estado: "ENTREGADA" });
+      fetchComandas();
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || "No se pudo actualizar el estado de la orden.";
+      Alert.alert("Error", errorMsg);
+      
+      if (!error.response) {
+        setComandas(prev => prev.filter(c => c.id !== ordenId));
+        Alert.alert("Simulación Offline", "Comanda completada localmente.");
       }
     }
   };
@@ -101,7 +115,7 @@ export default function TableroComandasScreen({ navigation }) {
           </View>
         ) : null}
 
-        {item.estado === "EN_ESPERA" ? (
+        {item.estado === "EN_ESPERA" && (
           <TouchableOpacity 
             style={styles.actionBtn}
             onPress={() => iniciarPreparacion(item.id)}
@@ -109,10 +123,22 @@ export default function TableroComandasScreen({ navigation }) {
           >
             <Text style={styles.actionBtnText}> INICIAR PREPARACIÓN</Text>
           </TouchableOpacity>
-        ) : (
+        )}
+
+        {item.estado === "EN_PREPARACION" && (
           <View style={styles.preparandoBadge}>
             <Text style={styles.preparandoBadgeText}> EN PREPARACIÓN</Text>
           </View>
+        )}
+
+        {item.estado === "LISTA" && (
+          <TouchableOpacity 
+            style={[styles.actionBtn, { backgroundColor: COLORS.estadoListo }]}
+            onPress={() => marcarComoEntregado(item.id)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.actionBtnText}> COMPLETADO</Text>
+          </TouchableOpacity>
         )}
       </TouchableOpacity>
     );

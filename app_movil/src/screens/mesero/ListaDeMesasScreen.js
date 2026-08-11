@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, ScrollView } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
 
@@ -19,6 +20,24 @@ export default function ListaDeMesasScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [newMesaNum, setNewMesaNum] = useState(null);
   const [newMesaUbi, setNewMesaUbi] = useState(null);
+  const [meseroName, setMeseroName] = useState("");
+
+  useEffect(() => {
+    const fetchName = async () => {
+      const name = await AsyncStorage.getItem("userName");
+      if (name) {
+        setMeseroName(name);
+        navigation.setOptions({
+          headerLeft: () => (
+            <Text style={{ marginLeft: 15, fontWeight: "bold", color: COLORS.textDark, fontSize: 16 }}>
+              {name}
+            </Text>
+          ),
+        });
+      }
+    };
+    fetchName();
+  }, [navigation]);
 
   const getAvailableNumbers = () => {
     const existing = mesas.map(m => m.numero);

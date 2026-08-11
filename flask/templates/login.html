@@ -67,6 +67,9 @@
 </head>
 <body>
     <div class="login-card">
+        <div class="text-center mb-3">
+            <img src="{{ url_for('static', filename='images/Coffee Code.jpeg') }}" alt="Coffee Code" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid var(--accent-border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        </div>
         <h3 class="text-center mb-4">Administración Cafetería</h3>
         {% with messages = get_flashed_messages() %}
             {% if messages %}

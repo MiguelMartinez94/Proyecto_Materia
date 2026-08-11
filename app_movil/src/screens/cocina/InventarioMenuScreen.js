@@ -4,9 +4,9 @@ import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
 
 const MOCK_INVENTARIO = [
-  { id: 1, nombre: "Pan Hamb.", unidad_medida: "pcs", stock_actual: 0, stock_minimo: 10 },
-  { id: 2, nombre: "Aguacate", unidad_medida: "pcs", stock_actual: 3, stock_minimo: 5 },
-  { id: 3, nombre: "Carne Res 150g", unidad_medida: "pcs", stock_actual: 42, stock_minimo: 10 },
+  { id: 1, nombre: "Pan Hamb.", unidad_medida: "pzas", stock_actual: 0, stock_minimo: 10 },
+  { id: 2, nombre: "Aguacate", unidad_medida: "pzas", stock_actual: 3, stock_minimo: 5 },
+  { id: 3, nombre: "Carne Res 150g", unidad_medida: "pzas", stock_actual: 42, stock_minimo: 10 },
   { id: 4, nombre: "Queso Cheddar", unidad_medida: "kg", stock_actual: 15, stock_minimo: 2 },
   { id: 5, nombre: "Café de grano", unidad_medida: "kg", stock_actual: 5, stock_minimo: 1 },
 ];
@@ -20,7 +20,11 @@ export default function InventarioMenuScreen({ navigation }) {
     setLoading(true);
     try {
       const response = await api.get("/cocina/inventario");
-      setInventario(response.data);
+      const dataFormatted = response.data.map(item => ({
+        ...item,
+        unidad_medida: item.unidad_medida === "pcs" ? "pzas" : item.unidad_medida
+      }));
+      setInventario(dataFormatted);
     } catch (error) {
       console.warn("Backend inalcanzable. Usando datos de inventario simulados.");
       setInventario(MOCK_INVENTARIO);

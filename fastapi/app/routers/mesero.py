@@ -1,10 +1,11 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Mesa, Producto, CategoriaMenu, Orden, DetalleOrden, Usuario
 from ..schemas import MesaOut, MesaCreate, ProductoOut, OrdenOut, OrdenCreate, DetalleOrdenCreate, OrdenResumen
 from ..services.payment_service import calcular_totales_orden
+from ..services.websocket_manager import manager
 
 router = APIRouter(
     prefix="/mesero", 
@@ -48,7 +49,7 @@ def obtener_menu(db: Session = Depends(get_db)):
     return db.query(Producto).filter(Producto.disponible == True).all()
 
 @router.post("/ordenes", response_model=OrdenOut)
-def crear_orden(orden_data: OrdenCreate, db: Session = Depends(get_db)):
+def crear_orden(orden_data: OrdenCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     
     
     mesa = db.query(Mesa).filter(Mesa.id == orden_data.mesa_id).first()
@@ -106,6 +107,18 @@ def crear_orden(orden_data: OrdenCreate, db: Session = Depends(get_db)):
     
     db.commit()
     db.refresh(nueva_orden)
+
+    background_tasks.add_task(
+        manager.broadcast,
+        {
+            "type": "NUEVA_ORDEN",
+            "title": "Nueva Orden",
+            "message": f"Mesa {mesa.numero} ha creado una nueva orden",
+            "time": "Justo ahora"
+        },
+        "COCINERO"
+    )
+
     return nueva_orden
 
 @router.post("/ordenes/{id}/items", response_model=OrdenOut)
@@ -188,7 +201,7 @@ def detalle_orden(id: int, db: Session = Depends(get_db)):
     return orden
 
 @router.patch("/mesas/{id}/pedir-cuenta", response_model=MesaOut)
-def pedir_cuenta_mesa(id: int, db: Session = Depends(get_db)):
+def pedir_cuenta_mesa(id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     mesa = db.query(Mesa).filter(Mesa.id == id).first()
     if not mesa:
         raise HTTPException(status_code=404, detail="Mesa no encontrada")
@@ -199,6 +212,18 @@ def pedir_cuenta_mesa(id: int, db: Session = Depends(get_db)):
     mesa.estado = "POR_COBRAR"
     db.commit()
     db.refresh(mesa)
+
+    background_tasks.add_task(
+        manager.broadcast,
+        {
+            "type": "CUENTA_POR_COBRAR",
+            "title": "Cuenta Lista",
+            "message": f"Mesa {mesa.numero} ({mesa.ubicacion}) lista para cobro",
+            "time": "Justo ahora"
+        },
+        "CAJERO"
+    )
+
     return mesa
 
 @router.patch("/mesas/{id}/liberar", response_model=MesaOut)

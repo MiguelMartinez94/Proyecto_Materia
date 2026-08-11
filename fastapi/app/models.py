@@ -73,6 +73,7 @@ class Producto(Base):
     descripcion = Column(String, nullable=True)
     precio = Column(Float, nullable=False)
     disponible = Column(Boolean, default=True, nullable=False)
+    imagen_url = Column(String, nullable=True)
     
     categoria = relationship("CategoriaMenu", back_populates="productos")
     

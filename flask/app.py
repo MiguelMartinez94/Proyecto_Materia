@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from functools import wraps
 import requests
 import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "123456"
@@ -149,15 +150,43 @@ def menu():
     if request.method == 'POST':
         action = request.form.get('action')
         if action == 'create':
+            imagen = request.files.get('imagen')
+            imagen_url = None
+            if imagen and imagen.filename:
+                filename = secure_filename(imagen.filename)
+                images_dir = os.path.join(app.root_path, 'static', 'images', 'platillos')
+                os.makedirs(images_dir, exist_ok=True)
+                imagen.save(os.path.join(images_dir, filename))
+                imagen_url = f"/static/images/platillos/{filename}"
+                
             data = {
                 "nombre": request.form.get('nombre'),
                 "descripcion": request.form.get('descripcion'),
                 "precio": float(request.form.get('precio')),
                 "categoria_id": int(request.form.get('categoria_id')),
-                "disponible": True
+                "disponible": True,
+                "imagen_url": imagen_url
             }
             res = fetch_api("/admin/menu/productos", method='POST', data=data)
             if res: flash("Producto creado exitosamente")
+        elif action == 'update':
+            id = request.form.get('id')
+            data = {}
+            if request.form.get('nombre'): data['nombre'] = request.form.get('nombre')
+            if request.form.get('descripcion'): data['descripcion'] = request.form.get('descripcion')
+            if request.form.get('precio'): data['precio'] = float(request.form.get('precio'))
+            if request.form.get('categoria_id'): data['categoria_id'] = int(request.form.get('categoria_id'))
+            
+            imagen = request.files.get('imagen')
+            if imagen and imagen.filename:
+                filename = secure_filename(imagen.filename)
+                images_dir = os.path.join(app.root_path, 'static', 'images', 'platillos')
+                os.makedirs(images_dir, exist_ok=True)
+                imagen.save(os.path.join(images_dir, filename))
+                data['imagen_url'] = f"/static/images/platillos/{filename}"
+                
+            res = fetch_api(f"/admin/menu/productos/{id}", method='PUT', data=data)
+            if res: flash("Producto actualizado exitosamente")
         elif action == 'delete':
             id = request.form.get('id')
             fetch_api(f"/admin/menu/productos/{id}", method='DELETE')

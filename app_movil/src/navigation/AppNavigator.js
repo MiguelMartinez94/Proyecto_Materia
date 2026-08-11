@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, StatusBar, ActivityIndicator, Alert, Platform } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, StatusBar, ActivityIndicator, Alert, Platform, Image } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../theme";
 import api, { setToken } from "../services/api";
 
 import MeseroStack from "./MeseroStack";
 import CajaStack from "./CajaStack";
 import CocinaStack from "./CocinaStack";
+import { NotificationProvider } from "../contexts/NotificationContext";
 
 const RootStack = createStackNavigator();
 
@@ -38,6 +40,11 @@ function LoginScreen({ navigation }) {
       setToken(access_token);
       
       const rol = usuario.rol;
+      await AsyncStorage.setItem('userToken', access_token);
+      await AsyncStorage.setItem('userRole', rol);
+      await AsyncStorage.setItem('userName', usuario.nombre);
+      await AsyncStorage.setItem('userId', usuario.id.toString());
+
       if (rol === "MESERO") {
         navigation.navigate("MeseroFlow");
         setLoading(false);
@@ -81,7 +88,10 @@ function LoginScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <View style={styles.header}>
-        <Text style={styles.appName}>Coffee Code</Text>
+        <Image 
+          source={require("../../assets/Coffee Code.jpeg")} 
+          style={{ width: 120, height: 120, borderRadius: 60, marginBottom: 10 }} 
+        />
         <Text style={styles.tagline}>Café Todo el Día, Todos los Días...</Text>
       </View>
 
@@ -132,15 +142,47 @@ function LoginScreen({ navigation }) {
 }
 
 export default function AppNavigator() {
+  const [isReady, setIsReady] = React.useState(false);
+  const [initialRoute, setInitialRoute] = React.useState("Login");
+
+  React.useEffect(() => {
+    const checkToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userToken");
+        const role = await AsyncStorage.getItem("userRole");
+        if (token && role) {
+          setToken(token);
+          if (role === "MESERO") setInitialRoute("MeseroFlow");
+          else if (role === "CAJERO") setInitialRoute("CajaFlow");
+          else if (role === "COCINERO") setInitialRoute("CocinaFlow");
+        }
+      } catch (e) {
+        console.error("Failed to load session", e);
+      }
+      setIsReady(true);
+    };
+    checkToken();
+  }, []);
+
+  if (!isReady) {
+    return (
+      <View style={{flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background}}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
   return (
-    <NavigationContainer>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="Login" component={LoginScreen} />
-        <RootStack.Screen name="MeseroFlow" component={MeseroStack} />
-        <RootStack.Screen name="CajaFlow" component={CajaStack} />
-        <RootStack.Screen name="CocinaFlow" component={CocinaStack} />
-      </RootStack.Navigator>
-    </NavigationContainer>
+    <NotificationProvider>
+      <NavigationContainer>
+        <RootStack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+          <RootStack.Screen name="Login" component={LoginScreen} />
+          <RootStack.Screen name="MeseroFlow" component={MeseroStack} />
+          <RootStack.Screen name="CajaFlow" component={CajaStack} />
+          <RootStack.Screen name="CocinaFlow" component={CocinaStack} />
+        </RootStack.Navigator>
+      </NavigationContainer>
+    </NotificationProvider>
   );
 }
 
