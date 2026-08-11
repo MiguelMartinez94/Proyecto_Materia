@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="split-layout">
-<div class="content-area main-content-split">
+<div class="main-content-split">
     <div class="page-header">
         <h2 class="page-title">Resumen de Existencias</h2>
     </div>
@@ -41,7 +41,22 @@
                     {% for i in inventario %}
                     <tr>
                         <td style="font-weight: 600;">{{ i.nombre }}</td>
-                        <td style="text-align: right; font-size: 1.5rem; font-weight: 700; {% if i.stock_actual <= i.stock_minimo %}color: var(--danger);{% endif %}">{{ i.stock_actual }}</td>
+                        <td style="text-align: right;">
+                            <form method="POST" action="{{ url_for('inventario') }}" style="display:flex; align-items:center; justify-content:flex-end; gap:0.5rem; margin:0;">
+                                <input type="hidden" name="action" value="update">
+                                <input type="hidden" name="id" value="{{ i.id }}">
+                                
+                                <button type="button" onclick="this.nextElementSibling.value = (Number(this.nextElementSibling.value) - 1).toString();" style="background:none; border:1px solid var(--accent-border); border-radius:4px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-dark); font-size:1.2rem;">&minus;</button>
+                                
+                                <input type="number" name="stock_actual" value="{{ '%g' % i.stock_actual }}" step="any" style="width: 100px; text-align: center; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.25rem; font-size: 1rem; font-weight: 600; color: {% if i.stock_actual <= i.stock_minimo %}var(--danger){% else %}inherit{% endif %};">
+                                
+                                <button type="button" onclick="this.previousElementSibling.value = (Number(this.previousElementSibling.value) + 1).toString();" style="background:none; border:1px solid var(--accent-border); border-radius:4px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-dark); font-size:1.2rem;">+</button>
+                                
+                                <button type="submit" class="btn btn-primary" style="padding: 0.25rem 0.5rem; border-radius: 4px; display:flex; align-items:center; justify-content:center;" title="Guardar cambios">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                </button>
+                            </form>
+                        </td>
                         <td style="color: var(--text-muted);">{{ 'pzas' if i.unidad_medida == 'pcs' else i.unidad_medida }}</td>
                         <td>
                             <div class="action-icons" style="display:flex; gap:0.5rem;">
@@ -50,13 +65,9 @@
                                     style="background:none; border:1px solid var(--accent-border); border-radius:4px; padding:0.35rem 0.6rem; cursor:pointer; font-size:0.75rem; color:var(--text-dark);">
                                     Editar
                                 </button>
-                                <form method="POST" action="{{ url_for('inventario') }}" style="display:inline;">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="id" value="{{ i.id }}">
-                                    <button type="submit" onclick="return confirm('Eliminar ingrediente?');" style="background:none; border:1px solid var(--accent-border); border-radius:4px; padding:0.35rem 0.6rem; cursor:pointer; font-size:0.75rem; color:var(--danger);">
-                                        Eliminar
-                                    </button>
-                                </form>
+                                <button type="button" onclick="confirmDelete({{ i.id }})" style="background:none; border:1px solid var(--accent-border); border-radius:4px; padding:0.35rem 0.6rem; cursor:pointer; font-size:0.75rem; color:var(--danger);" title="Eliminar">
+                                    Eliminar
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -74,8 +85,9 @@
                 </div>
             </div>
         </div>
-</div>
-    <div class="right-panel" id="ingredientePanel">
+        </div>
+    </div>
+    <div class="right-panel open" id="ingredientePanel">
         <form method="POST" action="{{ url_for('inventario') }}" id="ingredienteForm">
             <input type="hidden" name="action" value="create" id="formIngAction">
             <input type="hidden" name="id" id="formIngId">
@@ -104,7 +116,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Stock Inicial</label>
+                        <label class="form-label">Stock Actual</label>
                         <input type="number" step="0.01" name="stock_actual" id="ingStockActual" class="form-control" required>
                     </div>
                     <div class="form-group">
@@ -117,6 +129,19 @@
                 <button type="button" class="btn btn-outline panel-close" style="width: 48%;">Cancelar</button>
                 <button type="submit" class="btn btn-primary" style="width: 48%;" id="ingSubmitBtn">Guardar</button>
             </div>
+        </form>
+    </div>
+</div>
+
+<div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: var(--main-bg); padding: 2rem; border-radius: 8px; width: 400px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; font-family: var(--font-serif); font-size: 1.5rem;">Confirmar Eliminación</h3>
+        <p style="color: var(--text-muted); line-height: 1.5;">¿Estás seguro de que deseas eliminar este ingrediente? Esta acción no se puede deshacer.</p>
+        <form method="POST" action="{{ url_for('inventario') }}" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="deleteIngredienteId">
+            <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+            <button type="submit" class="btn" style="background-color: var(--danger); color: white; border-color: var(--danger);">Eliminar</button>
         </form>
     </div>
 </div>
@@ -176,6 +201,16 @@
             document.getElementById('ingredientePanel').classList.remove('open');
         });
     });
+
+    function confirmDelete(id) {
+        document.getElementById('deleteIngredienteId').value = id;
+        document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';
+        document.getElementById('deleteIngredienteId').value = '';
+    }
 
     let filteredRows = rows;
 

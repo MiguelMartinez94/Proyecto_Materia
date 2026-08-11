@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from "react-native";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
+import CustomModal from "../../components/CustomModal";
 
 const MOCK_INVENTARIO = [
   { id: 1, nombre: "Pan Hamb.", unidad_medida: "pzas", stock_actual: 0, stock_minimo: 10 },
@@ -15,6 +16,9 @@ export default function InventarioMenuScreen({ navigation }) {
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const fetchInventario = async () => {
     setLoading(true);
@@ -68,6 +72,55 @@ export default function InventarioMenuScreen({ navigation }) {
     item.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  const guardarInventario = async () => {
+    setModalVisible(false);
+    setSaving(true);
+    try {
+      const itemsPayload = inventario.map(item => ({
+        id: item.id,
+        stock_actual: item.stock_actual
+      }));
+      await api.post("/cocina/inventario/guardar", { items: itemsPayload });
+      
+      setModalContent({
+        title: "¡Éxito!",
+        message: "El inventario se ha guardado correctamente.",
+        isSuccess: true,
+        showCancelButton: false,
+        onClose: () => {
+          setModalVisible(false);
+          fetchInventario();
+        }
+      });
+      setModalVisible(true);
+    } catch (error) {
+      console.warn("Error al guardar inventario:", error);
+      setModalContent({
+        title: "Error",
+        message: "No se pudo guardar el inventario. Inténtalo de nuevo.",
+        isSuccess: false,
+        showCancelButton: false,
+        onClose: () => setModalVisible(false)
+      });
+      setModalVisible(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmarGuardado = () => {
+    setModalContent({
+      title: "Confirmar Cambios",
+      message: "¿Estás seguro de que deseas guardar las modificaciones del inventario? Esto actualizará la información en el panel administrativo.",
+      isSuccess: true,
+      buttonText: "Guardar",
+      showCancelButton: true,
+      onCancel: () => setModalVisible(false),
+      onClose: guardarInventario
+    });
+    setModalVisible(true);
+  };
+
   
   const advertencias = filteredInventario.filter(item => item.stock_actual <= item.stock_minimo);
   const regularItems = filteredInventario.filter(item => item.stock_actual > item.stock_minimo);
@@ -77,26 +130,16 @@ export default function InventarioMenuScreen({ navigation }) {
     const esAgotado = item.stock_actual === 0;
 
     let cardBg = COLORS.surface;
-    let badgeText = "Normal";
-    let badgeColor = COLORS.estadoLibre;
-
     if (esAgotado) {
       cardBg = "#FFEBEE"; 
-      badgeText = "AGOTADO";
-      badgeColor = COLORS.estadoOcupada;
     } else if (esBajo) {
       cardBg = "#FFF8E1"; 
-      badgeText = "CRÍTICO";
-      badgeColor = COLORS.estadoEnEspera;
     }
 
     return (
       <View style={[styles.itemCard, { backgroundColor: cardBg }]}>
         <View style={styles.itemInfo}>
           <Text style={styles.itemNombre}>{item.nombre}</Text>
-          <View style={[styles.badge, { backgroundColor: badgeColor }]}>
-            <Text style={styles.badgeText}>{badgeText}</Text>
-          </View>
         </View>
 
         <View style={styles.stockControl}>
@@ -128,6 +171,13 @@ export default function InventarioMenuScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={FONTS.title}>Inventario de Cocina</Text>
+        <TouchableOpacity style={styles.guardarBtn} onPress={confirmarGuardado} disabled={saving}>
+          {saving ? (
+            <ActivityIndicator size="small" color={COLORS.white} />
+          ) : (
+            <Text style={styles.guardarBtnText}>Guardar</Text>
+          )}
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -157,7 +207,7 @@ export default function InventarioMenuScreen({ navigation }) {
               </View>
             )}
 
-            <Text style={styles.seccionTitulo}> INGREDIENTES CLAVE</Text>
+            <Text style={styles.seccionTitulo}> INGREDIENTES</Text>
             <FlatList
               data={regularItems}
               keyExtractor={(item) => item.id.toString()}
@@ -171,6 +221,17 @@ export default function InventarioMenuScreen({ navigation }) {
           </View>
         )}
       </ScrollViewContainer>
+
+      <CustomModal 
+        visible={modalVisible}
+        onClose={modalContent.onClose}
+        title={modalContent.title}
+        message={modalContent.message}
+        isSuccess={modalContent.isSuccess}
+        buttonText={modalContent.buttonText}
+        showCancelButton={modalContent.showCancelButton}
+        onCancel={modalContent.onCancel}
+      />
     </SafeAreaView>
   );
 }
@@ -195,6 +256,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  guardarBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  guardarBtnText: {
+    color: COLORS.white,
+    fontWeight: "bold",
+    fontSize: 14,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -244,16 +319,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.textDark,
     marginRight: 10,
-  },
-  badge: {
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: "bold",
-    color: COLORS.white,
   },
   stockControl: {
     flexDirection: "row",

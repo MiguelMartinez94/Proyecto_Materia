@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, Alert } from "react-native";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
+import CustomModal from "../../components/CustomModal";
 
 const showAlert = (title, message) => {
   if (Platform.OS === 'web') {
@@ -19,6 +20,8 @@ export default function DetalleOrdenScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const isSubmitting = useRef(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({});
 
   const fetchDetalle = async () => {
     setLoading(true);
@@ -128,8 +131,16 @@ export default function DetalleOrdenScreen({ route, navigation }) {
     setActionLoading(true);
     try {
       await api.patch(`/mesero/mesas/${orden.mesa.id}/liberar`);
-      showAlert("Mesa liberada", "La mesa ha sido liberada y ya está disponible nuevamente.");
-      navigation.navigate("MeseroMain", { screen: "MesasTab" });
+      setModalContent({
+        title: "Mesa Liberada",
+        message: "La mesa ha sido liberada y ya está disponible nuevamente.",
+        isSuccess: true,
+        onClose: () => {
+          setModalVisible(false);
+          navigation.navigate("MeseroMain", { screen: "MesasTab" });
+        }
+      });
+      setModalVisible(true);
     } catch (error) {
       const msg = error.response?.data?.detail || "Error al liberar la mesa.";
       showAlert("Error", msg);
@@ -164,8 +175,16 @@ export default function DetalleOrdenScreen({ route, navigation }) {
               onPress={async () => {
                 try {
                   await api.patch(`/mesero/mesas/${mesaId}/liberar`);
-                  showAlert("Mesa liberada", "La mesa ha sido liberada correctamente.");
-                  navigation.goBack();
+                  setModalContent({
+                    title: "Mesa Liberada",
+                    message: "La mesa ha sido liberada correctamente.",
+                    isSuccess: true,
+                    onClose: () => {
+                      setModalVisible(false);
+                      navigation.goBack();
+                    }
+                  });
+                  setModalVisible(true);
                 } catch (err) {
                   showAlert("Error", "No se pudo liberar la mesa.");
                 }
@@ -259,6 +278,13 @@ export default function DetalleOrdenScreen({ route, navigation }) {
           </View>
         )}
       </View>
+      <CustomModal 
+        visible={modalVisible}
+        onClose={modalContent.onClose}
+        title={modalContent.title}
+        message={modalContent.message}
+        isSuccess={modalContent.isSuccess}
+      />
     </SafeAreaView>
   );
 }

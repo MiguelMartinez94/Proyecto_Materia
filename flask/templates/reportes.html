@@ -131,6 +131,38 @@
         </div>
     </div>
 
+    <div class="card" style="padding: 0; margin-top: 2rem;">
+        <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent-border);">
+            <h3 style="font-family: var(--font-serif); font-size: 1.25rem;">Detalle de Gastos</h3>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">{{ estadisticas.gastos | length }} gastos encontrados</span>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in estadisticas.gastos %}
+                    <tr>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ g.created_at[:16].replace('T', ' ') }}</td>
+                        <td>{{ g.descripcion }}</td>
+                        <td style="font-weight: 600;">${{ "%.2f"|format(g.monto) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not estadisticas.gastos %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay gastos en este periodo</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
         <a href="{{ url_for('descargar_reporte', formato='pdf', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='ventas') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
             Ventas PDF
@@ -147,8 +179,14 @@
         <a href="{{ url_for('descargar_reporte', formato='pdf', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='inventario') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
             Inventario PDF
         </a>
-        <a href="{{ url_for('descargar_reporte', formato='xlsx', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='inventario') }}" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+        <a href="{{ url_for('descargar_reporte', formato='xlsx', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='inventario') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
             Inventario XLSX
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='pdf', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='gastos') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Gastos PDF
+        </a>
+        <a href="{{ url_for('descargar_reporte', formato='xlsx', periodo=periodo_actual, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, tipo='gastos') }}" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+            Gastos XLSX
         </a>
     </div>
 </div>

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db
 from ..models import (Usuario, ConfiguracionNegocio, Role, Ingrediente, Producto,
-                        CategoriaMenu, Venta, Orden, DetalleOrden, Mesa)
+                        CategoriaMenu, Venta, Orden, DetalleOrden, Mesa, Gasto)
 from ..schemas import (UsuarioOut, UsuarioCreate, ConfiguracionNegocioOut, ConfiguracionNegocioUpdate, BaseSchema,
                         IngredienteOut, ProductoOut, CategoriaMenuOut, IngredienteCreate, IngredienteUpdate,
                         ProductoCreate, ProductoUpdate, CategoriaMenuCreate, RoleOut)
@@ -123,7 +123,7 @@ def listar_roles(db: Session = Depends(get_db)):
 
 @router.get("/ingredientes", response_model=List[IngredienteOut])
 def listar_ingredientes(db: Session = Depends(get_db)):
-    return db.query(Ingrediente).all()
+    return db.query(Ingrediente).order_by(Ingrediente.id).all()
 
 @router.post("/ingredientes", response_model=IngredienteOut)
 def crear_ingrediente(ingrediente: IngredienteCreate, db: Session = Depends(get_db)):
@@ -389,6 +389,19 @@ def reporte_estadisticas(
             ]
         })
 
+    gastos_db = db.query(Gasto).filter(
+        Gasto.created_at >= dt_inicio,
+        Gasto.created_at <= dt_fin
+    ).order_by(Gasto.created_at.desc()).all()
+
+    gastos_detalle = []
+    for g in gastos_db:
+        gastos_detalle.append({
+            "descripcion": g.descripcion,
+            "monto": round(g.monto, 2),
+            "created_at": g.created_at.isoformat()
+        })
+
     return {
         "periodo": {"inicio": f_inicio.isoformat(), "fin": f_fin.isoformat()},
         "resumen": {
@@ -401,7 +414,8 @@ def reporte_estadisticas(
             "data": ventas_por_dia_data
         },
         "productos_top": productos_top,
-        "pedidos": pedidos_detalle
+        "pedidos": pedidos_detalle,
+        "gastos": gastos_detalle
     }
 
 
@@ -411,7 +425,7 @@ def exportar_pdf(
     periodo: str = Query("semana", regex="^(hoy|semana|mes)$"),
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
-    tipo: str = Query("ventas", regex="^(ventas|pedidos|inventario)$"),
+    tipo: str = Query("ventas", regex="^(ventas|pedidos|inventario|gastos)$"),
     db: Session = Depends(get_db)
 ):
     from reportlab.lib.pagesizes import letter, landscape
@@ -500,6 +514,26 @@ def exportar_pdf(
                 f"${o.total:,.2f}"
             ])
 
+    elif tipo == "gastos":
+        elements.append(Paragraph("Reporte de Gastos", title_style))
+        elements.append(Paragraph(f"Periodo: {f_inicio.strftime('%d/%m/%Y')} - {f_fin.strftime('%d/%m/%Y')}", subtitle_style))
+
+        gastos = db.query(Gasto).filter(
+            Gasto.created_at >= dt_inicio, Gasto.created_at <= dt_fin
+        ).order_by(Gasto.created_at.desc()).all()
+
+        data = [["Fecha", "Descripción", "Monto"]]
+        total_gastos = 0
+        for g in gastos:
+            data.append([
+                g.created_at.strftime("%d/%m/%Y %H:%M"),
+                g.descripcion,
+                f"${g.monto:,.2f}"
+            ])
+            total_gastos += g.monto
+
+        data.append(["", "TOTAL GASTOS:", f"${total_gastos:,.2f}"])
+
     else:  
         elements.append(Paragraph("Reporte de Inventario", title_style))
         elements.append(Paragraph(f"Generado: {hoy.strftime('%d/%m/%Y')}", subtitle_style))
@@ -552,7 +586,7 @@ def exportar_xlsx(
     periodo: str = Query("semana", regex="^(hoy|semana|mes)$"),
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
-    tipo: str = Query("ventas", regex="^(ventas|pedidos|inventario)$"),
+    tipo: str = Query("ventas", regex="^(ventas|pedidos|inventario|gastos)$"),
     db: Session = Depends(get_db)
 ):
     from openpyxl import Workbook
@@ -653,6 +687,34 @@ def exportar_xlsx(
                 o.estado,
                 sum(i.cantidad for i in o.items),
                 o.total
+            ]
+            for col, val in enumerate(values, 1):
+                cell = ws.cell(row=row_idx, column=col, value=val)
+                cell.border = border
+                cell.alignment = Alignment(horizontal='center')
+                if row_idx % 2 == 0:
+                    cell.fill = alt_fill
+
+    elif tipo == "gastos":
+        ws.title = "Gastos"
+        headers = ["Fecha", "Descripción", "Monto"]
+
+        gastos = db.query(Gasto).filter(
+            Gasto.created_at >= dt_inicio, Gasto.created_at <= dt_fin
+        ).order_by(Gasto.created_at.desc()).all()
+
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+
+        for row_idx, g in enumerate(gastos, 2):
+            values = [
+                g.created_at.strftime("%d/%m/%Y %H:%M"),
+                g.descripcion,
+                g.monto
             ]
             for col, val in enumerate(values, 1):
                 cell = ws.cell(row=row_idx, column=col, value=val)

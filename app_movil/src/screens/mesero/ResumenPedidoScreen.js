@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, SafeArea
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
+import CustomModal from "../../components/CustomModal";
 
 export default function ResumenPedidoScreen({ route, navigation }) {
   const { carrito: carritoInicial, mesaId, mesaNumero, mesaUbicacion, ordenId } = route.params || {};
@@ -13,6 +14,8 @@ export default function ResumenPedidoScreen({ route, navigation }) {
   const [itemEditandoNota, setItemEditandoNota] = useState(null); 
   const [notaTemp, setNotaTemp] = useState("");
   const [meseroId, setMeseroId] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({});
 
   React.useEffect(() => {
     const fetchId = async () => {
@@ -96,12 +99,16 @@ export default function ResumenPedidoScreen({ route, navigation }) {
         await api.post("/mesero/ordenes", payload);
       }
       
-      if (Platform.OS === 'web') {
-        window.alert(`El pedido para la Mesa ${mesaNumero} ha sido enviado correctamente.`);
-      } else {
-        Alert.alert("Éxito", `El pedido para la Mesa ${mesaNumero} ha sido enviado correctamente.`);
-      }
-      navigation.navigate("MeseroMain", { screen: "MesasTab" });
+      setModalContent({
+        title: "¡Pedido Enviado!",
+        message: `El pedido para la Mesa ${mesaNumero} ha sido enviado a la cocina correctamente.`,
+        isSuccess: true,
+        onClose: () => {
+          setModalVisible(false);
+          navigation.navigate("MeseroMain", { screen: "MesasTab" });
+        }
+      });
+      setModalVisible(true);
     } catch (error) {
       const errorMsg = error.response?.data?.detail || error.message || "Error desconocido";
       console.warn("Error al enviar pedido:", errorMsg);
@@ -227,6 +234,14 @@ export default function ResumenPedidoScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
       </View>
+      
+      <CustomModal 
+        visible={modalVisible}
+        onClose={modalContent.onClose}
+        title={modalContent.title}
+        message={modalContent.message}
+        isSuccess={modalContent.isSuccess}
+      />
     </SafeAreaView>
   );
 }

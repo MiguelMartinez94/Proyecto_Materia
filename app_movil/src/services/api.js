@@ -6,8 +6,8 @@ import { Platform } from "react-native";
 
 
 const DEFAULT_API_URL = Platform.select({
-  android: "http://10.199.145.53:8000",
-  ios: "http://10.199.145.53:8000",
+  android: "http://192.168.1.20:8000",
+  ios: "http://192.168.1.20:8000",
   default: "http://localhost:8000",
 });
 

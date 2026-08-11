@@ -156,3 +156,12 @@ class ConfiguracionNegocio(Base):
     mensaje_ticket = Column(String(255), default="¡Gracias por su preferencia!", nullable=False)
     impuesto_porcentaje = Column(Float, default=16.0, nullable=False)
     moneda = Column(String(10), default="MXN", nullable=False)
+
+
+class Gasto(Base):
+    __tablename__ = "gastos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    descripcion = Column(String(255), nullable=False)
+    monto = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

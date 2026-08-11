@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, StatusBar, ActivityIndicator, Alert, Platform, Image } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, StatusBar, ActivityIndicator, Alert, Platform, Image, KeyboardAvoidingView, ScrollView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../theme";
 import api, { setToken } from "../services/api";
@@ -84,8 +84,12 @@ function LoginScreen({ navigation }) {
   };
 
   return (
-    
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <View style={styles.header}>
         <Image 
@@ -137,7 +141,9 @@ function LoginScreen({ navigation }) {
       </View>
 
 
-    </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -18,30 +18,35 @@ export default function GestionMonetariaScreen({ navigation }) {
   const [nuevoGastoMonto, setNuevoGastoMonto] = useState("");
   const [nuevoGastoDesc, setNuevoGastoDesc] = useState("");
 
-  const handleAddGasto = () => {
+  const handleAddGasto = async () => {
     if (!nuevoGastoMonto || !nuevoGastoDesc) return;
     const monto = parseFloat(nuevoGastoMonto);
     if (isNaN(monto)) return;
     
-    setGastos([
-      ...gastos,
-      {
-        id: Date.now(),
+    try {
+      await api.post("/caja/gastos", {
         descripcion: nuevoGastoDesc,
-        monto: monto,
-        created_at: new Date().toISOString()
-      }
-    ]);
-    setNuevoGastoMonto("");
-    setNuevoGastoDesc("");
-    setModalGastosVisible(false);
+        monto: monto
+      });
+      setNuevoGastoMonto("");
+      setNuevoGastoDesc("");
+      setModalGastosVisible(false);
+      fetchIngresos(); // Refresh data
+    } catch (error) {
+      console.warn("Error guardando el gasto:", error);
+      alert("No se pudo guardar el gasto");
+    }
   };
 
   const fetchIngresos = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/caja/ingresos-dia");
-      setIngresos(response.data);
+      const [ingresosRes, gastosRes] = await Promise.all([
+        api.get("/caja/ingresos-dia"),
+        api.get("/caja/gastos")
+      ]);
+      setIngresos(ingresosRes.data);
+      setGastos(gastosRes.data);
     } catch (error) {
       console.warn("Backend inalcanzable. Usando resumen monetario simulado.");
       setIngresos({
@@ -50,6 +55,7 @@ export default function GestionMonetariaScreen({ navigation }) {
         ticket_promedio: 250.00,
         ventas_detalle: MOCK_VENTAS_DETALLE
       });
+      setGastos([]);
     } finally {
       setLoading(false);
     }

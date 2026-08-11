@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Activ
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/api";
 import { COLORS, FONTS } from "../../theme";
+import CustomModal from "../../components/CustomModal";
 
 
 const MOCK_MESAS = [
@@ -21,6 +22,8 @@ export default function ListaDeMesasScreen({ navigation }) {
   const [newMesaNum, setNewMesaNum] = useState(null);
   const [newMesaUbi, setNewMesaUbi] = useState(null);
   const [meseroName, setMeseroName] = useState("");
+  const [customModalVisible, setCustomModalVisible] = useState(false);
+  const [customModalContent, setCustomModalContent] = useState({});
 
   useEffect(() => {
     const fetchName = async () => {
@@ -51,7 +54,13 @@ export default function ListaDeMesasScreen({ navigation }) {
 
   const handleCreateMesa = async () => {
     if (!newMesaNum || !newMesaUbi) {
-      Alert.alert("Atención", "Debes seleccionar un número y una ubicación");
+      setCustomModalContent({
+        title: "Atención",
+        message: "Debes seleccionar un número y una ubicación",
+        isSuccess: false,
+        onClose: () => setCustomModalVisible(false)
+      });
+      setCustomModalVisible(true);
       return;
     }
     try {
@@ -64,11 +73,26 @@ export default function ListaDeMesasScreen({ navigation }) {
       setModalVisible(false);
       setNewMesaNum(null);
       setNewMesaUbi(null);
-      Alert.alert("Éxito", "Mesa agregada correctamente.");
-      fetchMesas();
+      
+      setCustomModalContent({
+        title: "¡Éxito!",
+        message: "Mesa agregada correctamente.",
+        isSuccess: true,
+        onClose: () => {
+          setCustomModalVisible(false);
+          fetchMesas();
+        }
+      });
+      setCustomModalVisible(true);
     } catch (error) {
       const errorMsg = error.response?.data?.detail || error.message || "Error desconocido";
-      Alert.alert("Error al crear mesa", `Fallo: ${errorMsg}\n\nSi dice Network Error, revisa tu IP. Si dice 404/405, reinicia tu backend.`);
+      setCustomModalContent({
+        title: "Error al crear mesa",
+        message: `Fallo: ${errorMsg}`,
+        isSuccess: false,
+        onClose: () => setCustomModalVisible(false)
+      });
+      setCustomModalVisible(true);
       setLoading(false);
     }
   };
@@ -250,6 +274,14 @@ export default function ListaDeMesasScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      <CustomModal 
+        visible={customModalVisible}
+        onClose={customModalContent.onClose}
+        title={customModalContent.title}
+        message={customModalContent.message}
+        isSuccess={customModalContent.isSuccess}
+      />
     </SafeAreaView>
   );
 }

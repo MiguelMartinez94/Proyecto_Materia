@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from ..database import get_db, is_sqlite
 from ..models import Orden, DetalleOrden, Ingrediente, Mesa
-from ..schemas import OrdenOut, DetalleOrdenOut, DetalleOrdenUpdateEstado, OrdenUpdateEstado, IngredienteOut
+from ..schemas import OrdenOut, DetalleOrdenOut, DetalleOrdenUpdateEstado, OrdenUpdateEstado, IngredienteOut, InventarioBulkUpdate
 from ..services.inventory_service import descontar_inventario
 from ..services.websocket_manager import manager
 from .auth import require_roles
@@ -205,3 +205,13 @@ def actualizar_estado_item(id: int, payload: DetalleOrdenUpdateEstado, backgroun
 def ver_inventario_cocina(db: Session = Depends(get_db)):
     
     return db.query(Ingrediente).order_by(Ingrediente.stock_actual.asc()).all()
+
+@router.post("/inventario/guardar")
+def guardar_inventario_cocina(payload: InventarioBulkUpdate, db: Session = Depends(get_db)):
+    for item in payload.items:
+        ingrediente = db.query(Ingrediente).filter(Ingrediente.id == item.id).first()
+        if ingrediente:
+            ingrediente.stock_actual = item.stock_actual
+    
+    db.commit()
+    return {"message": "Inventario actualizado correctamente"}

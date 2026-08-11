@@ -50,7 +50,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - REACT_NATIVE_PACKAGER_HOSTNAME=10.199.145.53
+      - REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.20
       - EXPO_WEB_PORT=8082
     volumes:
       - ./app_movil:/app

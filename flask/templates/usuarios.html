@@ -78,6 +78,9 @@
                                             {{ 'Desactivar' if u.activo else 'Activar' }}
                                         </button>
                                     </form>
+                                    <button type="button" onclick="confirmDelete({{ u.id }})" style="background: none; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.75rem; color: var(--danger);" title="Eliminar">
+                                        Eliminar
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -145,6 +148,19 @@
     </div>
 </div>
 
+<div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: var(--main-bg); padding: 2rem; border-radius: 8px; width: 400px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; font-family: var(--font-serif); font-size: 1.5rem;">Confirmar Eliminación</h3>
+        <p style="color: var(--text-muted); line-height: 1.5;">¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
+        <form method="POST" action="{{ url_for('usuarios') }}" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="deleteUsuarioId">
+            <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+            <button type="submit" class="btn" style="background-color: var(--danger); color: white; border-color: var(--danger);">Eliminar</button>
+        </form>
+    </div>
+</div>
+
 <script>
 function editUser(id, nombre, username, rolId, activo) {
     document.getElementById('formAction').value = 'update';
@@ -171,6 +187,16 @@ function resetForm() {
     document.getElementById('panelTitle').textContent = 'Nuevo Usuario';
     document.getElementById('submitBtn').textContent = 'Guardar Usuario';
     document.getElementById('statusGroup').style.display = 'none';
+}
+
+function confirmDelete(id) {
+    document.getElementById('deleteUsuarioId').value = id;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    document.getElementById('deleteUsuarioId').value = '';
 }
 </script>
 {% endblock %}

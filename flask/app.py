@@ -254,7 +254,8 @@ def reportes():
         "resumen": {"total_ventas": 0, "num_ventas": 0, "ticket_promedio": 0},
         "grafica_ventas": {"labels": [], "data": []},
         "productos_top": [],
-        "pedidos": []
+        "pedidos": [],
+        "gastos": []
     }
 
     return render_template('reportes.html',

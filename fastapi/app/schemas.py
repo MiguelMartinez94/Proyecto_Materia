@@ -32,6 +32,13 @@ class IngredienteUpdate(BaseSchema):
 class IngredienteUpdateStock(BaseSchema):
     stock_actual: float = Field(..., ge=0)
 
+class InventarioBulkUpdateItem(BaseSchema):
+    id: int
+    stock_actual: float = Field(..., ge=0)
+
+class InventarioBulkUpdate(BaseSchema):
+    items: List[InventarioBulkUpdateItem]
+
 
 
 
@@ -223,3 +230,14 @@ class ConfiguracionNegocioUpdate(BaseSchema):
     mensaje_ticket: Optional[str] = None
     impuesto_porcentaje: Optional[float] = Field(None, ge=0)
     moneda: Optional[str] = None
+
+class GastoBase(BaseSchema):
+    descripcion: str
+    monto: float = Field(..., ge=0)
+
+class GastoCreate(GastoBase):
+    pass
+
+class GastoOut(GastoBase):
+    id: int
+    created_at: datetime
